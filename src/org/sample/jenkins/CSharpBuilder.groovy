@@ -120,7 +120,7 @@ class CSharpBuilder {
         }
         script.stage('Publish Code Coverage') {
             script.publishCoverage(adapters: [
-                coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: [
+                script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: [
                 [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
                 [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
                 [thresholdTarget: 'File', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
