@@ -1,6 +1,7 @@
 package org.sample.jenkins
 
 import org.jenkinsci.plugins.workflow.cps.CpsScript
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import groovy.xml.*
 
 class CSharpBuilder {
@@ -31,24 +32,40 @@ class CSharpBuilder {
         script.node(label: nodeLabel) {
             try {
                 wrappedRun()
+            } catch (e) {
+                notifyBuildStatus(BuildNotifyStatus.Failure)
+                throw e
             } finally {
-                script.cleanWs()
+                try {
+                    def currentResult = currentBuild.result ?: 'SUCCESS'
+                    if (currentResult == 'UNSTABLE') {
+                        notifyBuildStatus(BuildNotifyStatus.Unstable)
+                    } else if (currentResult == 'SUCCESS') {
+                        notifyBuildStatus(BuildNotifyStatus.Success)
+                    } else {
+                        script.echo("Unexpected build status! ${currentResult}")
+                    }
+                } finally {
+                    script.cleanWs()
+                }
             }
         }        
+    }
+
+    private bool isMainBranch() {
+        return env.BRANCH_NAME in ['main', 'master']
     }
 
     private void wrappedRun()
     {
         // Populate the workspace
-        script.echo('Checking out...')
         script.checkout(script.scm)
 
         // Can't access files until we have a node and workspace.
-        script.echo('Checking config...')
         if(script.fileExists('Configuration.json')) {
-            script.echo('Reading config...')
             config = script.readJSON(file: 'Configuration.json')
         }
+
         // Configure properties and triggers.
         List properties = []
         List triggers = []
@@ -57,10 +74,138 @@ class CSharpBuilder {
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
         script.properties(properties)
-        script.echo('Properties set')
 
-        script.stage('Test') {
-            script.echo 'Test'
+        script.stage('Send Start Notification') {
+            notifyBuildStatus(BuildNotifyStatus.Pending)
+        }
+        script.stage('Setup for forensics') {
+            script.discoverGitReferenceBuild()
+        }
+        script.stage('Restore NuGet For Solution') {
+            //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
+            script.bat("dotnet restore --nologo --no-cache")
+        }
+        script.stage('Configure Build Settings') {
+            if(config.containsKey('Version')) {
+                def buildVersion = config['Version']
+                // Count the parts, and add any missing zeroes to get up to 3, then add the build version.
+                def parts = new ArrayList(buildVersion.split('\\.').toList())
+                while(parts.size() < 3) {
+                    parts << "0"
+                }
+                // The nuget version does not include the build number.
+                nugetVersion = parts.join('.')
+                if(parts.size() < 4) {
+                    parts << env.BUILD_NUMBER
+                }
+                // This version is for the file and assembly versions.
+                version = parts.join('.')
+            }
+        }
+        script.stage('Build Solution - Debug') {
+            script.echo("Setting NuGet Package version to: ${nugetVersion}")
+            script.echo("Setting File and Assembly version to ${version}")
+            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${nugetVersion} -p:Version=${version} --no-restore")
+        }
+        script.stage('Run Tests') {
+            // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
+            script.bat("""
+                dotnet test --nologo -c Debug --results-directory TestResults --logger trx --collect:"XPlat code coverage" --no-restore --no-build
+                """)
+        }
+        script.stage('Publish Test Output') {
+            def tests = gatherTestResults('TestResults/**/*.trx')
+            def coverage = gatherCoverageResults('TestResults/**/In/**/*.cobertura.xml')
+            testResults << "\n${tests}\n${coverage}"
+            script.mstest(testResultsFile:"TestResults/**/*.trx", failOnError: true, keepLongStdio: true)
+        }
+        script.stage('Publish Code Coverage') {
+            script.publishCoverage(adapters: [
+                coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: [
+                [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
+                [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
+                [thresholdTarget: 'File', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                [thresholdTarget: 'Class', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                [thresholdTarget: 'Method', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                [thresholdTarget: 'Instruction', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
+                [thresholdTarget: 'Line', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                [thresholdTarget: 'Conditional', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
+                ])
+            ], failNoReports: true, failUnhealthy: true, calculateDiffForChangeRequests: true)
+        }
+        script.stage('Clean') {
+            script.bat("dotnet clean --nologo")
+        }
+        script.stage('Build Solution - Release') {
+            script.echo("Setting NuGet Package version to: ${nugetVersion}")
+            script.echo("Setting File and Assembly version to ${version}")
+            script.bat("dotnet build --nologo -c Release -p:PackageVersion=${nugetVersion} -p:Version=${version} --no-restore")
+        }
+        script.stage('Run Security Scan') {
+            script.bat("dotnet new tool-manifest")
+            script.bat("dotnet tool install --local security-scan --no-cache")
+
+            def slnFile = ""
+            // Search the repository for a file ending in .sln.
+            script.findFiles(glob: '**').each {
+                def path = it.toString();
+                if(path.toLowerCase().endsWith('.sln')) {
+                    slnFile = path;
+                }
+            }
+            if(slnFile.length() == 0) {
+                throw new Exception('No solution files were found to build in the root of the git repository.')
+            }
+            script.bat("""
+                dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
+                """)
+
+            def analysisIssues = scanForIssues tool: sarif(pattern: 'sast-report.sarif')
+            analyses << analysisIssues
+            def analysisText = getAnaylsisResultsText(analysisIssues)
+            if(analysisText.length() > 0) {
+                testResults << "Static analysis results:\n" + analysisText
+            } else {
+                testResults << "No static analysis issues to report."
+            }
+            // Rescan. If we collect and then aggregate, warnings become errors
+            script.recordIssues(aggregatingResults: true, enabledForFailure: true, failOnError: true, skipPublishingChecks: true, tool: sarif(pattern: 'sast-report.sarif'))
+        }
+        script.stage('Preexisting NuGet Package Check') {
+            // Find all the nuget packages to publish.
+            def packageText = script.bat(returnStdout: true, script: "\"${tool 'NuGet-2022'}\" list -NonInteractive -Source http://localhost:8081/repository/nuget-hosted")
+            packageText = packageText.replaceAll("\r", "")
+            def packages = new ArrayList(packageText.split("\n").toList())
+            packages.removeAll { line -> line.toLowerCase().startsWith("warning: ") }
+            packages = packages.collect { pkg -> pkg.replaceAll(' ', '.') }
+
+            def nupkgFiles = "**/*.nupkg"
+            script.findFiles(glob: nupkgFiles).each { nugetPkg ->
+                def pkgName = nugetPkg.getName()
+                pkgName = pkgName.substring(0, pkgName.length() - 6) // Remove extension
+                if(packages.contains(pkgName)) {
+                    script.error "The package ${pkgName} is already in the NuGet repository."
+                } else {
+                    script.echo "The package ${nugetPkg} is not in the NuGet repository."
+                }
+            }
+        }
+        script.stage('NuGet Publish') {
+            // We are only going to publish to NuGet when the branch is main or master.
+            // This way other branches will test without interfering with releases.
+            if(isMainBranch()) {
+                script.withCredentials([string(credentialsId: 'Nexus-NuGet-API-Key', variable: 'APIKey')]) { 
+                    // Find all the nuget packages to publish.
+                    def nupkgFiles = "**/*.nupkg"
+                    script.findFiles(glob: nupkgFiles).each { nugetPkg ->
+                        script.bat("""
+                            dotnet nuget push \"${nugetPkg}\" --api-key ${APIKey} --source http://localhost:8081/repository/nuget-hosted
+                            """)
+                    }
+                }
+            } else {
+                Utils.markStageSkippedForConditional('NuGet Publish')
+            }
         }
     }
 
