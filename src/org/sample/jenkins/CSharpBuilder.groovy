@@ -89,6 +89,7 @@ class CSharpBuilder {
         script.properties(properties)
 
         script.stage('Send Start Notification') {
+            script.bat("set")
             notifyBuildStatus(BuildNotifyStatus.Pending)
         }
         script.stage('Setup for forensics') {
