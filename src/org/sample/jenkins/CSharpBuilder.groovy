@@ -183,7 +183,7 @@ class CSharpBuilder {
             // We are only going to publish to NuGet when the branch is main or master.
             // This way other branches will test without interfering with releases.
             if(nugetSource && isMainBranch()) {
-                script.withCredentials([string(credentialsId: config.getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
+                script.withCredentials([script.string(credentialsId: config.getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
                     // Find all the nuget packages to publish.
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
