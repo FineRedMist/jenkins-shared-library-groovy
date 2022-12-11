@@ -30,8 +30,8 @@ class CSharpBuilder {
     }
 
     void run() {
-        if(script.fileExists 'Configuration.json') {
-            config = script.readJSON file: 'Configuration.json'
+        if(script.fileExists('Configuration.json')) {
+            config = script.readJSON(file: 'Configuration.json')
         }
         List properties = []
         List triggers = []
@@ -49,7 +49,7 @@ class CSharpBuilder {
     }
 
     private String readTextFile(String filePath) {
-        def bin64 = script.readFile file: filePath, encoding: 'Base64'
+        def bin64 = script.readFile(file: filePath, encoding: 'Base64')
         def binDat = bin64.decodeBase64()
 
         if(binDat.size() >= 3 
