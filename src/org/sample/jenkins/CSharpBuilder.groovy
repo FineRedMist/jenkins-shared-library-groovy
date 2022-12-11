@@ -36,7 +36,7 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
-                    def currentResult = currentBuild.result ?: 'SUCCESS'
+                    def currentResult = script.currentBuild.result ?: 'SUCCESS'
                     if (currentResult == 'UNSTABLE') {
                         notifyBuildStatus(BuildNotifyStatus.Unstable)
                     } else if (currentResult == 'SUCCESS') {
