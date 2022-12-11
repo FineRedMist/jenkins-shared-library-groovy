@@ -52,7 +52,7 @@ class CSharpBuilder {
     }
 
     private boolean isMainBranch() {
-        return env.BRANCH_NAME in ['main', 'master']
+        return env.BRANCH_NAME.toLower() in ['main', 'master']
     }
 
     private void wrappedRun()
