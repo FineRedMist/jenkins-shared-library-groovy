@@ -186,7 +186,8 @@ class CSharpBuilder {
         }
         script.stage('Preexisting NuGet Package Check') {
             // Find all the nuget packages to publish.
-            def packageText = script.bat(returnStdout: true, script: "\"${tool 'NuGet-2022'}\" list -NonInteractive -Source http://localhost:8081/repository/nuget-hosted")
+            def tool = script.tool('NuGet-2022')
+            def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source http://localhost:8081/repository/nuget-hosted")
             packageText = packageText.replaceAll("\r", "")
             def packages = new ArrayList(packageText.split("\n").toList())
             packages.removeAll { line -> line.toLowerCase().startsWith("warning: ") }
