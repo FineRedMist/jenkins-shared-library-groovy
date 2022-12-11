@@ -20,11 +20,64 @@ class CSharpBuilder {
         this.nugetVersion = version
     }
 
-    void getScmTrigger() {
+    String getScmTrigger() {
         if(config.containsKey('scmTrigger')) {
             return config['scmTrigger']
         }
         return 'H * * * *'
+    }
+
+    String getNugetSource() {
+        if(config.containsKey('NugetSource')) {
+            return config['NugetSource']
+        }
+        return null
+    }
+
+    boolean getSendSlack() {
+        if(config.containsKey('SendSlack')) {
+            return config['SendSlack']
+        }
+        return true
+    }
+
+    boolean getSendSlackStartNotification() {
+        if(config.containsKey('SendSlackStartNotification')) {
+            return config['SendSlackStartNotification']
+        }
+        return true
+    }
+
+    boolean getSendGitHubStatus() {
+        return config.containsKey('GitHubStatusName') && config.containsKey('GitHubStatusCredentialsId')
+    }
+
+    String getGitHubStatusName() {
+        if(getSendGitHubStatus()) {
+            return config['GitHubStatusName']
+        }
+        return null
+    }
+
+    String getSlackChannel() {
+        if(config.containsKey('SlackChannel')) {
+            return config['SlackChannel']
+        }
+        return null
+    }
+
+    String getNugetKeyCredentialsId() {
+        if(config.containsKey('NugetKeyCredentialsId')) {
+            return config['NugetKeyCredentialsId']
+        }
+        return null
+    }
+
+    String getGitHubStatusCredentialsId() {
+        if(getSendGitHubStatus()) {
+            return config['GitHubStatusCredentialsId']
+        }
+        return null
     }
 
     void run(nodeLabel = null) {
@@ -187,34 +240,41 @@ class CSharpBuilder {
         }
         script.stage('Preexisting NuGet Package Check') {
             // Find all the nuget packages to publish.
-            def tool = script.tool('NuGet-2022')
-            def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source http://localhost:8081/repository/nuget-hosted")
-            packageText = packageText.replaceAll("\r", "")
-            def packages = new ArrayList(packageText.split("\n").toList())
-            packages.removeAll { line -> line.toLowerCase().startsWith("warning: ") }
-            packages = packages.collect { pkg -> pkg.replaceAll(' ', '.') }
+            def nugetSource = getNugetSource()
+            if(!nugetSource) {
+                script.echo "Both 'NugetSource' and 'NugetKeyCredentialsId' are required to for nuget operations."
+                Utils.markStageSkippedForConditional('Preexisting NuGet Package Check')
+            } else {
+                def tool = script.tool('NuGet-2022')
+                def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source \"${nugetSource}\"")
+                packageText = packageText.replaceAll("\r", "")
+                def packages = new ArrayList(packageText.split("\n").toList())
+                packages.removeAll { line -> line.toLowerCase().startsWith("warning: ") }
+                packages = packages.collect { pkg -> pkg.replaceAll(' ', '.') }
 
-            def nupkgFiles = "**/*.nupkg"
-            script.findFiles(glob: nupkgFiles).each { nugetPkg ->
-                def pkgName = nugetPkg.getName()
-                pkgName = pkgName.substring(0, pkgName.length() - 6) // Remove extension
-                if(packages.contains(pkgName)) {
-                    script.error "The package ${pkgName} is already in the NuGet repository."
-                } else {
-                    script.echo "The package ${nugetPkg} is not in the NuGet repository."
+                def nupkgFiles = "**/*.nupkg"
+                script.findFiles(glob: nupkgFiles).each { nugetPkg ->
+                    def pkgName = nugetPkg.getName()
+                    pkgName = pkgName.substring(0, pkgName.length() - 6) // Remove extension
+                    if(packages.contains(pkgName)) {
+                        script.error "The package ${pkgName} is already in the NuGet repository."
+                    } else {
+                        script.echo "The package ${nugetPkg} is not in the NuGet repository."
+                    }
                 }
             }
         }
         script.stage('NuGet Publish') {
+            def nugetSource = getNugetSource()
             // We are only going to publish to NuGet when the branch is main or master.
             // This way other branches will test without interfering with releases.
-            if(isMainBranch()) {
-                script.withCredentials([string(credentialsId: 'Nexus-NuGet-API-Key', variable: 'APIKey')]) { 
+            if(nugetSource && isMainBranch()) {
+                script.withCredentials([string(credentialsId: getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
                     // Find all the nuget packages to publish.
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
                         script.bat("""
-                            dotnet nuget push \"${nugetPkg}\" --api-key ${APIKey} --source http://localhost:8081/repository/nuget-hosted
+                            dotnet nuget push \"${nugetPkg}\" --api-key ${APIKey} --source "${nugetSource}"
                             """)
                     }
                 }
@@ -239,10 +299,12 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status, List<String> testResults = []) {
-        def sent = script.slackSend(channel: '#build-notifications', color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
-        testResults.each { message ->
-            if(message.length() > 0) {
-                script.slackSend(channel: sent.threadId, color: status.slackColour, message: message)
+        if(getSendSlack() && (status != BuildNotifyStatus.Pending || getSendSlackStartNotification())) {
+            def sent = script.slackSend(channel: getSlackChannel(), color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
+            testResults.each { message ->
+                if(message.length() > 0) {
+                    script.slackSend(channel: sent.threadId, color: status.slackColour, message: message)
+                }
             }
         }
         setBuildStatus("Build ${status.notifyText}", status.githubStatus)
@@ -317,6 +379,9 @@ class CSharpBuilder {
     }
 
     private void setBuildStatus(String message, GitHubStatus state) {
+        if(!getSendGitHubStatus()) {
+            return
+        }
         String gitRepo = ""
         String gitOwner = ""
         String gitSha = ""
@@ -337,7 +402,7 @@ class CSharpBuilder {
         }
 
         script.echo "Setting build status for owner ${gitOwner} and repository ${gitRepo} to: (${state}) ${message}"
-        githubNotify(credentialsId: 'GitHub-Status-Notify', repo: gitRepo, account: gitOwner, sha: gitSha, context: 'Status', description: message, status: state.githubState, targetUrl: env.BUIlD_URL)
+        githubNotify(credentialsId: getGitHubStatusCredentialsId(), repo: gitRepo, account: gitOwner, sha: gitSha, context: getGitHubStatusName(), description: message, status: state.githubState, targetUrl: env.BUIlD_URL)
     }
 
 }
