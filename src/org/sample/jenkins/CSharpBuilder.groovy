@@ -27,6 +27,7 @@ class CSharpBuilder {
     }
 
     void run(nodeLabel = 'any') {
+        script.echo("Starting node ${nodeLabel}")
         script.node(label: nodeLabel) {
             try {
                 wrappedRun()
@@ -39,10 +40,13 @@ class CSharpBuilder {
     private void wrappedRun()
     {
         // Populate the workspace
+        script.echo('Checking out...')
         script.checkout(script.scm)
 
         // Can't access files until we have a node and workspace.
+        script.echo('Checking config...')
         if(script.fileExists('Configuration.json')) {
+            script.echo('Reading config...')
             config = script.readJSON(file: 'Configuration.json')
         }
         // Configure properties and triggers.
@@ -53,6 +57,7 @@ class CSharpBuilder {
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
         script.properties(properties)
+        script.echo('Properties set')
 
         script.stage('Test') {
             script.echo 'Test'
