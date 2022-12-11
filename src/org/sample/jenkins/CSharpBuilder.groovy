@@ -28,7 +28,6 @@ class CSharpBuilder {
     }
 
     void run(nodeLabel = null) {
-        script.echo("Starting node ${nodeLabel}")
         script.node(label: nodeLabel) {
             try {
                 wrappedRun()
@@ -52,7 +51,7 @@ class CSharpBuilder {
         }        
     }
 
-    private bool isMainBranch() {
+    private boolean isMainBranch() {
         return env.BRANCH_NAME in ['main', 'master']
     }
 
