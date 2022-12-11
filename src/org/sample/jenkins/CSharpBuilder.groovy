@@ -89,7 +89,7 @@ class CSharpBuilder {
             script.bat("dotnet restore --nologo --no-cache")
         }
         script.stage('Build Solution - Debug') {
-            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.GetNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
+            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
         }
         script.stage('Run Tests') {
             // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
