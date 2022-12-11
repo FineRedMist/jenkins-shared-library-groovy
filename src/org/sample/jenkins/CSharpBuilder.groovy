@@ -36,7 +36,7 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
-                    def analysisIssues = scanForIssues tool: script.msBuild()
+                    def analysisIssues = script.scanForIssues(tool: script.msBuild())
                     analyses << analysisIssues
                     def analysisText = getAnaylsisResultsText(analysisIssues)
                     if(analysisText.length() > 0) {
