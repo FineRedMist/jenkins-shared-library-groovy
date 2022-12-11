@@ -6,78 +6,14 @@ import groovy.xml.*
 
 class CSharpBuilder {
     List testResults = []
-    String version
-    String nugetVersion
     List analyses = []
     CpsScript script
     def env = {}
-    def config = {}
+    Configuration config = null
 
     CSharpBuilder(CpsScript script) {
         this.script = script
         this.env = script.env
-        this.version = "1.0.0.${env.BUILD_NUMBER}"
-        this.nugetVersion = version
-    }
-
-    String getScmTrigger() {
-        if(config.containsKey('scmTrigger')) {
-            return config['scmTrigger']
-        }
-        return 'H * * * *'
-    }
-
-    String getNugetSource() {
-        if(config.containsKey('NugetSource')) {
-            return config['NugetSource']
-        }
-        return null
-    }
-
-    boolean getSendSlack() {
-        if(config.containsKey('SendSlack')) {
-            return config['SendSlack']
-        }
-        return true
-    }
-
-    boolean getSendSlackStartNotification() {
-        if(config.containsKey('SendSlackStartNotification')) {
-            return config['SendSlackStartNotification']
-        }
-        return true
-    }
-
-    boolean getSendGitHubStatus() {
-        return config.containsKey('GitHubStatusName') && config.containsKey('GitHubStatusCredentialsId')
-    }
-
-    String getGitHubStatusName() {
-        if(getSendGitHubStatus()) {
-            return config['GitHubStatusName']
-        }
-        return null
-    }
-
-    String getSlackChannel() {
-        if(config.containsKey('SlackChannel')) {
-            return config['SlackChannel']
-        }
-        return null
-    }
-
-    String getNugetKeyCredentialsId() {
-        if(config.containsKey('NugetKeyCredentialsId')) {
-            return config['NugetKeyCredentialsId']
-        }
-        return null
-    }
-
-    String getGitHubStatusCredentialsId() {
-        if(getSendGitHubStatus()) {
-            return config['GitHubStatusCredentialsId']
-        }
-        return null
     }
 
     void run(nodeLabel = null) {
@@ -128,14 +64,12 @@ class CSharpBuilder {
         script.checkout(script.scm)
 
         // Can't access files until we have a node and workspace.
-        if(script.fileExists('Configuration.json')) {
-            config = script.readJSON(file: 'Configuration.json')
-        }
+        config = Configuration.read(script, 'Configuration.json')
 
         // Configure properties and triggers.
         List properties = []
         List triggers = []
-        triggers.add(script.pollSCM(getScmTrigger()))
+        triggers.add(script.pollSCM(config.getScmTrigger()))
         properties.add(script.disableConcurrentBuilds())
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
@@ -152,27 +86,8 @@ class CSharpBuilder {
             //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
             script.bat("dotnet restore --nologo --no-cache")
         }
-        script.stage('Configure Build Settings') {
-            if(config.containsKey('Version')) {
-                def buildVersion = config['Version']
-                // Count the parts, and add any missing zeroes to get up to 3, then add the build version.
-                def parts = new ArrayList(buildVersion.split('\\.').toList())
-                while(parts.size() < 3) {
-                    parts << "0"
-                }
-                // The nuget version does not include the build number.
-                nugetVersion = parts.join('.')
-                if(parts.size() < 4) {
-                    parts << env.BUILD_NUMBER
-                }
-                // This version is for the file and assembly versions.
-                version = parts.join('.')
-            }
-        }
         script.stage('Build Solution - Debug') {
-            script.echo("Setting NuGet Package version to: ${nugetVersion}")
-            script.echo("Setting File and Assembly version to ${version}")
-            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${nugetVersion} -p:Version=${version} --no-restore")
+            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.GetNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
         }
         script.stage('Run Tests') {
             // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
@@ -204,9 +119,7 @@ class CSharpBuilder {
             script.bat("dotnet clean --nologo")
         }
         script.stage('Build Solution - Release') {
-            script.echo("Setting NuGet Package version to: ${nugetVersion}")
-            script.echo("Setting File and Assembly version to ${version}")
-            script.bat("dotnet build --nologo -c Release -p:PackageVersion=${nugetVersion} -p:Version=${version} --no-restore")
+            script.bat("dotnet build --nologo -c Release -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
         }
         script.stage('Run Security Scan') {
             script.bat("dotnet new tool-manifest")
@@ -240,7 +153,7 @@ class CSharpBuilder {
         }
         script.stage('Preexisting NuGet Package Check') {
             // Find all the nuget packages to publish.
-            def nugetSource = getNugetSource()
+            def nugetSource = config.getNugetSource()
             if(!nugetSource) {
                 script.echo "Both 'NugetSource' and 'NugetKeyCredentialsId' are required to for nuget operations."
                 Utils.markStageSkippedForConditional('Preexisting NuGet Package Check')
@@ -265,11 +178,11 @@ class CSharpBuilder {
             }
         }
         script.stage('NuGet Publish') {
-            def nugetSource = getNugetSource()
+            def nugetSource = config.getNugetSource()
             // We are only going to publish to NuGet when the branch is main or master.
             // This way other branches will test without interfering with releases.
             if(nugetSource && isMainBranch()) {
-                script.withCredentials([string(credentialsId: getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
+                script.withCredentials([string(credentialsId: config.getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
                     // Find all the nuget packages to publish.
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
@@ -299,8 +212,8 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status, List<String> testResults = []) {
-        if(getSendSlack() && (status != BuildNotifyStatus.Pending || getSendSlackStartNotification())) {
-            def sent = script.slackSend(channel: getSlackChannel(), color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
+        if(config.getSendSlack() && (status != BuildNotifyStatus.Pending || config.getSendSlackStartNotification())) {
+            def sent = script.slackSend(channel: config.getSlackChannel(), color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
             testResults.each { message ->
                 if(message.length() > 0) {
                     script.slackSend(channel: sent.threadId, color: status.slackColour, message: message)
@@ -379,7 +292,7 @@ class CSharpBuilder {
     }
 
     private void setBuildStatus(String message, GitHubStatus state) {
-        if(!getSendGitHubStatus()) {
+        if(!config.getSendGitHubStatus()) {
             return
         }
         String gitRepo = ""
@@ -402,7 +315,7 @@ class CSharpBuilder {
         }
 
         script.echo "Setting build status for owner ${gitOwner} and repository ${gitRepo} to: (${state}) ${message}"
-        githubNotify(credentialsId: getGitHubStatusCredentialsId(), repo: gitRepo, account: gitOwner, sha: gitSha, context: getGitHubStatusName(), description: message, status: state.githubState, targetUrl: env.BUIlD_URL)
+        githubNotify(credentialsId: config.getGitHubStatusCredentialsId(), repo: gitRepo, account: gitOwner, sha: gitSha, context: config.getGitHubStatusName(), description: message, status: state.githubState, targetUrl: env.BUIlD_URL)
     }
 
 }
