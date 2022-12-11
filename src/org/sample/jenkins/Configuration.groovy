@@ -21,7 +21,7 @@ class Configuration {
     static Configuration read(CpsScript script, String file) {
         def config = new Configuration()
         config.version = "1.0.0.${script.env.BUILD_NUMBER}"
-        config.nugetVersion = version
+        config.nugetVersion = config.version
 
         if(!script.fileExists(file)) {
             return config
