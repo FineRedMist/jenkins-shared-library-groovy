@@ -173,7 +173,7 @@ class CSharpBuilder {
                 dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
                 """)
 
-            def analysisIssues = scanForIssues tool: script.sarif(pattern: 'sast-report.sarif')
+            def analysisIssues = script.scanForIssues(tool: script.sarif(pattern: 'sast-report.sarif'))
             analyses << analysisIssues
             def analysisText = getAnaylsisResultsText(analysisIssues)
             if(analysisText.length() > 0) {
@@ -182,7 +182,7 @@ class CSharpBuilder {
                 testResults << "No static analysis issues to report."
             }
             // Rescan. If we collect and then aggregate, warnings become errors
-            script.recordIssues(aggregatingResults: true, enabledForFailure: true, failOnError: true, skipPublishingChecks: true, tool: sarif(pattern: 'sast-report.sarif'))
+            script.recordIssues(aggregatingResults: true, enabledForFailure: true, failOnError: true, skipPublishingChecks: true, tool: script.sarif(pattern: 'sast-report.sarif'))
         }
         script.stage('Preexisting NuGet Package Check') {
             // Find all the nuget packages to publish.
