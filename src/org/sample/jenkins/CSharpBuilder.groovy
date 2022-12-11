@@ -72,7 +72,7 @@ class CSharpBuilder {
     private void wrappedRun()
     {
         // Populate the workspace
-        script.checkout(script.scm, branches: [[name: env.BRANCH_NAME]], doGenerateSubmoduleConfigurations: true)
+        script.checkout(script.scm)
 
         // Can't access files until we have a node and workspace.
         if(script.fileExists('Configuration.json')) {
@@ -93,7 +93,7 @@ class CSharpBuilder {
             notifyBuildStatus(BuildNotifyStatus.Pending)
         }
         script.stage('Setup for forensics') {
-            script.discoverGitReferenceBuild()
+            script.discoverGitReferenceBuild(targetBranch: env.BRANCH_NAME)
         }
         script.stage('Restore NuGet For Solution') {
             //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
