@@ -26,15 +26,8 @@ class CSharpBuilder {
         return 'H * * * *'
     }
 
-    void getNodeLabel() {
-        if(config.containsKey('nodeLabel')) {
-            return config['nodeLabel']
-        }
-        return 'any'
-    }
-
-    void run() {
-        script.node(label: getNodeLabel()) {
+    void run(nodeLabel = 'any') {
+        script.node(label: nodeLabel) {
             try {
                 wrappedRun()
             } finally {
