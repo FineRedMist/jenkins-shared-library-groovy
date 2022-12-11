@@ -35,22 +35,34 @@ class CSharpBuilder {
 
     void run() {
         script.node(label: getNodeLabel()) {
-            // Can't access files until we have a node and workspace.
-            if(script.fileExists('Configuration.json')) {
-                config = script.readJSON(file: 'Configuration.json')
+            try {
+                wrappedRun()
+            } finally {
+                script.cleanWs()
             }
-            // Configure properties and triggers.
-            List properties = []
-            List triggers = []
-            triggers.add(script.pollSCM(getScmTrigger()))
-            properties.add(script.disableConcurrentBuilds())
-            properties.add(script.disableResume())
-            properties.add(script.pipelineTriggers(triggers))
-            script.properties(properties)
+        }        
+    }
 
-            script.stage('Test') {
-                script.echo 'Test'
-            }
+    private void wrappedRun()
+    {
+        // Populate the workspace
+        script.checkout(script.scm)
+
+        // Can't access files until we have a node and workspace.
+        if(script.fileExists('Configuration.json')) {
+            config = script.readJSON(file: 'Configuration.json')
+        }
+        // Configure properties and triggers.
+        List properties = []
+        List triggers = []
+        triggers.add(script.pollSCM(getScmTrigger()))
+        properties.add(script.disableConcurrentBuilds())
+        properties.add(script.disableResume())
+        properties.add(script.pipelineTriggers(triggers))
+        script.properties(properties)
+
+        script.stage('Test') {
+            script.echo 'Test'
         }
     }
 
