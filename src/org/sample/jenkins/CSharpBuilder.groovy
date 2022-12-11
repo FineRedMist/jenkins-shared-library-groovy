@@ -36,6 +36,17 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
+                    def analysisIssues = scanForIssues tool: script.msBuild()
+                    analyses << analysisIssues
+                    def analysisText = getAnaylsisResultsText(analysisIssues)
+                    if(analysisText.length() > 0) {
+                        testResults << "Build warnings and errors:\n" + analysisText
+                    } else {
+                        testResults << "No build warnings or errors."
+                    }
+                    // Rescan. If we collect and then aggregate, warnings become errors
+                    script.recordIssues(aggregatingResults: true, skipPublishingChecks: true, tool: script.msBuild())
+
                     def currentResult = script.currentBuild.result ?: 'SUCCESS'
                     if (currentResult == 'UNSTABLE') {
                         notifyBuildStatus(BuildNotifyStatus.Unstable)
@@ -44,6 +55,10 @@ class CSharpBuilder {
                     } else {
                         script.echo("Unexpected build status! ${currentResult}")
                     }
+                } catch (e) {
+                    notifyBuildStatus(BuildNotifyStatus.Failure)
+                    throw e
+                }
                 } finally {
                     script.cleanWs()
                 }
@@ -159,7 +174,7 @@ class CSharpBuilder {
                 dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
                 """)
 
-            def analysisIssues = scanForIssues tool: sarif(pattern: 'sast-report.sarif')
+            def analysisIssues = scanForIssues tool: script.sarif(pattern: 'sast-report.sarif')
             analyses << analysisIssues
             def analysisText = getAnaylsisResultsText(analysisIssues)
             if(analysisText.length() > 0) {
