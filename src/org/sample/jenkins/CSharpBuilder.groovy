@@ -72,7 +72,7 @@ class CSharpBuilder {
     private void wrappedRun()
     {
         // Populate the workspace
-        script.checkout(script.scm)
+        script.checkout(script.scm, branches: [[name: env.BRANCH_NAME]], doGenerateSubmoduleConfigurations: true)
 
         // Can't access files until we have a node and workspace.
         if(script.fileExists('Configuration.json')) {
