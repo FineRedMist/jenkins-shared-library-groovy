@@ -1,3 +1,5 @@
+package org.sample.jenkins
+
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 import groovy.xml.*
 

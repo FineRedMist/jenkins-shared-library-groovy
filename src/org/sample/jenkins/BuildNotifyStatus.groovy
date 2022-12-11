@@ -1,3 +1,5 @@
+package org.sample.jenkins
+
 enum BuildNotifyStatus {
     Pending("started", null, GitHubStatus.Pending),
     Unstable("unstable", "warning", GitHubStatus.Failure),

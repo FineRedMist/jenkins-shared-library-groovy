@@ -1,3 +1,5 @@
+package org.sample.jenkins
+
 enum GitHubStatus {
     Pending('PENDING'),
     Failure('FAILURE'),
