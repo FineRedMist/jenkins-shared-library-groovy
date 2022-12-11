@@ -46,7 +46,6 @@ class CSharpBuilder {
                     }
                 } catch (e) {
                     notifyBuildStatus(BuildNotifyStatus.Failure)
-                    throw e
                 } finally {
                     script.cleanWs()
                 }
@@ -212,7 +211,7 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status, List<String> testResults = []) {
-        if(config.getSendSlack() && (status != BuildNotifyStatus.Pending || config.getSendSlackStartNotification())) {
+        if(config && config.getSendSlack() && (status != BuildNotifyStatus.Pending || config.getSendSlackStartNotification())) {
             def sent = script.slackSend(channel: config.getSlackChannel(), color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
             testResults.each { message ->
                 if(message.length() > 0) {
@@ -292,7 +291,7 @@ class CSharpBuilder {
     }
 
     private void setBuildStatus(String message, GitHubStatus state) {
-        if(!config.getSendGitHubStatus()) {
+        if(!config || !config.getSendGitHubStatus()) {
             return
         }
         String gitRepo = ""
