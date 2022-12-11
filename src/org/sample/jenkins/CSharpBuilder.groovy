@@ -1,7 +1,10 @@
 package org.sample.jenkins
 
+import org.sample.Jenkins.*
+
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
+
 import groovy.xml.*
 
 class CSharpBuilder {
