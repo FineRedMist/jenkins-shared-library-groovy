@@ -58,7 +58,6 @@ class CSharpBuilder {
                 } catch (e) {
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                     throw e
-                }
                 } finally {
                     script.cleanWs()
                 }
