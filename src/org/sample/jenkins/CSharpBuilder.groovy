@@ -5,8 +5,8 @@ import groovy.xml.*
 
 class CSharpBuilder {
     List testResults = []
-    String version = "1.0.0.${env.BUILD_NUMBER}"
-    String nugetVersion = version
+    String version`
+    String nugetVersion
     List analyses = []
     CpsScript script
     def env = {}
@@ -15,6 +15,8 @@ class CSharpBuilder {
     CSharpBuilder(CpsScript script) {
         this.script = script
         this.env = script.env
+        this.version = "1.0.0.${env.BUILD_NUMBER}"
+        this.nugetVersion = version
     }
 
     void getScmTrigger() {
