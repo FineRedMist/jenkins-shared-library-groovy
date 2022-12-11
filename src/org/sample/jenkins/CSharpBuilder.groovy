@@ -26,7 +26,7 @@ class CSharpBuilder {
         return 'H * * * *'
     }
 
-    void run(nodeLabel = 'any') {
+    void run(nodeLabel = null) {
         script.echo("Starting node ${nodeLabel}")
         script.node(label: nodeLabel) {
             try {
