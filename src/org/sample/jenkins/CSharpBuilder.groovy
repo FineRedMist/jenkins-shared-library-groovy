@@ -93,7 +93,7 @@ class CSharpBuilder {
             notifyBuildStatus(BuildNotifyStatus.Pending)
         }
         script.stage('Setup for forensics') {
-            script.discoverGitReferenceBuild(targetBranch: env.BRANCH_NAME)
+            script.discoverGitReferenceBuild()
         }
         script.stage('Restore NuGet For Solution') {
             //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
