@@ -188,7 +188,7 @@ class CSharpBuilder {
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
                         script.bat("""
-                            dotnet nuget push \"${nugetPkg}\" --api-key ${APIKey} --source "${nugetSource}"
+                            dotnet nuget push \"${nugetPkg}\" --api-key "%APIKey%" --source "${nugetSource}"
                             """)
                     }
                 }
