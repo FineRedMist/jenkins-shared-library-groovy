@@ -5,7 +5,7 @@ import groovy.xml.*
 
 class CSharpBuilder {
     List testResults = []
-    String version`
+    String version
     String nugetVersion
     List analyses = []
     CpsScript script
