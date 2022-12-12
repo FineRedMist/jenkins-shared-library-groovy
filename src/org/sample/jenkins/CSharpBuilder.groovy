@@ -174,7 +174,6 @@ class CSharpBuilder {
                 return nugetSource != null
             })
 
-            if(nugetSource && isMainBranch()) {
         String nugetCredentialsId = config.getNugetKeyCredentialsId()
         addStageIfTrue('NuGet Publish',
             {
@@ -201,7 +200,6 @@ class CSharpBuilder {
                 }
                 return true
             })
-        }
     }
 
     private void addStage(String name, Closure method) {
