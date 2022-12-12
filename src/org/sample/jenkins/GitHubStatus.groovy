@@ -15,7 +15,6 @@ enum GitHubStatus {
 
     private void setStatus(Configuration config, String message) {
         if(!config || !config.getSendGitHubStatus()) {
-            script.echo "Skipping setting the build status, GitHub status notifications are disabled."
             return
         }
         
