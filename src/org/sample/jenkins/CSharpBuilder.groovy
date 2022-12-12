@@ -37,6 +37,7 @@ class CSharpBuilder {
                         script.echo("Unexpected build status! ${currentResult}")
                     }
                 } catch (e) {
+                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                 } finally {
                     script.cleanWs()
