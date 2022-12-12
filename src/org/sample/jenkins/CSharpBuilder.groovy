@@ -183,7 +183,7 @@ class CSharpBuilder {
         addStageIfTrue(name, method, null)
     }
 
-    private void addStageIfTrue(String name, Closure method, Closure<boolean> runIfTrue) {
+    private void addStageIfTrue(String name, Closure method, Closure runIfTrue) {
         stages << [
             name: name,
             run: method,
