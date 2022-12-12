@@ -20,7 +20,7 @@ class Utils {
     }
 
     Map gatherXmlResults(CpsScript script, String searchPath, Closure<Map> closure) {
-        Map results = {}
+        Map results = [:]
         def files = 0
 
         script.findFiles(glob: searchPath).each { f ->
@@ -41,7 +41,7 @@ class Utils {
             files += 1
         }
 
-        results['files'] = files
+        results.files = files
 
         return results
     }

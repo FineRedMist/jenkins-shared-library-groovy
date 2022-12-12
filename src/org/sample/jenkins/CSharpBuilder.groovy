@@ -207,20 +207,20 @@ class CSharpBuilder {
         Map results = Utils.gatherXmlResults(script, searchPath, {xml ->
             def counters = trx['ResultSummary']['Counters']
 
-            return {
+            return [
                 total: counters['@total'][0].toInteger(),
                 passed: counters['@passed'][0].toInteger(),
                 failed: counters['@failed'][0].toInteger()
-            }
+            ]
         })
 
-        if(results['files'] == 0) {
+        if(results.files == 0) {
             return "No test results found."
         } 
         
-        def total = results['total']
-        def passed = results['passed']
-        def failed = results['failed']
+        def total = results.total
+        def passed = results.passed
+        def failed = results.failed
 
         if(failed == 0) {
             if(passed == 1) {
@@ -236,18 +236,18 @@ class CSharpBuilder {
     private String gatherCoverageResults(String searchPath) {
 
         Map results = Utils.gatherXmlResults(script, searchPath { xml ->
-            return {
+            return [
                 linesCovered: cover['@lines-covered'].toInteger(),
                 linesValid: cover['@lines-valid'].toInteger()
-            }            
+            ]
         })
 
-        if(results['files'] == 0) {
+        if(results.files == 0) {
             return "No code coverage results were found to report."
         } 
 
-        def linesCovered = results['linesCovered']
-        def linesValid = results['linesValid']
+        def linesCovered = results.linesCovered
+        def linesValid = results.linesValid
 
         if(linesCovered == 0) {
             return "No code lines were found to collect test coverage for."
