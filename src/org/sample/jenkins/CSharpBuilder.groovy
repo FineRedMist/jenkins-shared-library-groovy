@@ -61,7 +61,7 @@ class CSharpBuilder {
     private void wrappedRun()
     {
         // Populate the workspace
-        script.checkout(script.scm)
+        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
 
         // Can't access files until we have a node and workspace.
         config = Configuration.read(script, 'Configuration.json')
