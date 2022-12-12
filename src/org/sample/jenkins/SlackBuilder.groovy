@@ -9,10 +9,10 @@ class SlackBuilder {
     private def env
     private List threadedMessages = []
 
-    SlackBuilder(CpsScript script, Configuration config) {
-        this.script = script
-        this.env = script.env
+    SlackBuilder(Configuration config) {
         this.config = config
+        this.script = config.script
+        this.env = config.env
     }
 
     void addThreadedMessage(String message) {

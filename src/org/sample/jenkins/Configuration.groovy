@@ -4,6 +4,11 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 
 class Configuration {
 
+    // Cached here so it is easily sharable when passing the configuration around.
+    CpsScript script
+    // The environment of the executing script.
+    def env
+
     private String version = null
     private String nugetVersion = null
     private String scmTrigger = 'H * * * *'
@@ -20,6 +25,9 @@ class Configuration {
 
     static Configuration read(CpsScript script, String file) {
         def config = new Configuration()
+        config.script = script
+        config.env = script.env
+
         config.version = "1.0.0.${script.env.BUILD_NUMBER}"
         config.nugetVersion = config.version
 

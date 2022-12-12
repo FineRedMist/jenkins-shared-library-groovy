@@ -68,7 +68,7 @@ class CSharpBuilder {
         // Can't access files until we have a node and workspace.
         config = Configuration.read(script, 'Configuration.json')
 
-        slack = new SlackBuilder(script, config)
+        slack = new SlackBuilder(config)
 
         // Configure properties and triggers.
         List properties = []
@@ -215,7 +215,7 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status) {
-        slack.sned(status)
+        slack.send(status)
         setBuildStatus("Build ${status.notifyText}", status.githubStatus)
     }
 
