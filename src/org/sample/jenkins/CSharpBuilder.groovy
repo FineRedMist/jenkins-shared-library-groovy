@@ -84,7 +84,7 @@ class CSharpBuilder {
 
         stages.each { stg ->
             script.stage(stg.name) {
-                if(!stg.runIfTrue || !stg.runIfTrue()) {
+                if(stg.runIfTrue && !stg.runIfTrue()) {
                     Utils.markStageSkippedForConditional(stg.name)
                 } else {
                     stg.run()
