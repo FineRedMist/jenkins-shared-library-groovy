@@ -191,7 +191,7 @@ class CSharpBuilder {
         if(analysisText.length() > 0) {
             slack.addThreadedMessage("${found}:\n" + analysisText)
         } else {
-            slack.addThreadedMessage("${notfound}.")
+            slack.addThreadedMessage("${notFound}.")
         }
         // Rescan. If we collect and then aggregate, warnings become errors
         script.recordIssues(aggregatingResults: true, enabledForFailure: enabledForFailure, failOnError: failOnError, skipPublishingChecks: true, tool: tool)
