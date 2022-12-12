@@ -200,20 +200,6 @@ class CSharpBuilder {
         }
     }
 
-    private String readTextFile(String filePath) {
-        def bin64 = script.readFile(file: filePath, encoding: 'Base64')
-        def binDat = bin64.decodeBase64()
-
-        if(binDat.size() >= 3 
-            && binDat[0] == -17
-            && binDat[1] == -69
-            && binDat[2] == -65) {
-            return new String(binDat, 3, binDat.size() - 3, "UTF-8")
-        } else {
-            return new String(binDat)
-        }
-    }
-
     private void notifyBuildStatus(BuildNotifyStatus status) {
         slack.send(status)
         status.githubStatus.setStatus(config, "Build ${status.notifyText}")
@@ -227,7 +213,7 @@ class CSharpBuilder {
         script.findFiles(glob: searchPath).each { f ->
             String fullName = f
 
-            def data = readTextFile(fullName)
+            def data = Utils.readTextFile(script, fullName)
 
             def trx = new XmlParser(false, true, true).parseText(data)
 
@@ -260,7 +246,7 @@ class CSharpBuilder {
         script.findFiles(glob: searchPath).each { f ->
             String fullName = f
 
-            def data = readTextFile(fullName)
+            def data = Utils.readTextFile(script, fullName)
 
             def cover = new XmlParser(false, true, true).parseText(data)
 
