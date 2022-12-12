@@ -16,13 +16,11 @@ class SlackBuilder {
     }
 
     boolean isEnabled() {
-        return config 
-            && config.getSendSlack() 
+        return config && config.getSendSlack() 
     }
 
     boolean isEnabledForStart() {
-        return isEnabled() 
-        && config.getSendSlackStartNotification()
+        return isEnabled() && config.getSendSlackStartNotification()
     }
 
     void addThreadedMessage(String message) {
