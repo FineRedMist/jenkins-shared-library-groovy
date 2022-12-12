@@ -14,6 +14,52 @@ The script is driven by a Configuration.json that is in the root of the reposito
 * GitHub Configuration Options
     * GitHubStatusName: [optional] The status name for custom GitHub status names. If not set, they will not be sent (and rely on Jenkins built in notifications).
     * GitHubStatusCredentialsId: [optional] The credentials to use for updating the GitHub status. If not set, they will not be sent (and rely on Jenkins built in notifications).
+* Coverage Thresholds [optional]
+    * This field is a map representing thresholds passed to [publishCoverage](https://www.jenkins.io/doc/pipeline/steps/code-coverage-api/)
+    * The default value of 'CoverageThresholds' is:
+
+```json
+{
+    {
+        "thresholdTarget": "Group",
+        "unhealthyThreshold": 100.0
+    },
+    {
+        "thresholdTarget": "Package", 
+        "unhealthyThreshold": 100.0
+    },
+    {
+        "thresholdTarget": "File", 
+        "unhealthyThreshold": 50.0, 
+        "unstableThreshold": 85.0
+    },
+    {
+        "thresholdTarget": "Class", 
+        "unhealthyThreshold": 50.0, 
+        "unstableThreshold": 85.0
+    },
+    {
+        "thresholdTarget": "Method", 
+        "unhealthyThreshold": 50.0, 
+        "unstableThreshold": 85.0
+    },
+    {
+        "thresholdTarget": "Instruction", 
+        "unhealthyThreshold": 0.0, 
+        "unstableThreshold": 0.0
+    },
+    {
+        "thresholdTarget": "Line", 
+        "unhealthyThreshold": 50.0, 
+        "unstableThreshold": 85.0
+    },
+    {
+        "thresholdTarget": "Conditional", 
+        "unhealthyThreshold": 0.0, 
+        "unstableThreshold": 0.0
+    }
+}
+```
 
 Extra configuration:
  * There is an expectation that a 'NuGet-2022' tool defined that points to the nuget executable.
