@@ -22,6 +22,7 @@ class CSharpBuilder {
             try {
                 wrappedRun()
             } catch (e) {
+                slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                 notifyBuildStatus(BuildNotifyStatus.Failure)
                 throw e
             } finally {
