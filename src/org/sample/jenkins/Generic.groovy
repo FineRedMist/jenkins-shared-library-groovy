@@ -4,7 +4,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 
 import groovy.xml.*
 
-class Utils {
+class Generic {
     static String readTextFile(CpsScript script, String filePath) {
         def bin64 = script.readFile(file: filePath, encoding: 'Base64')
         def binDat = bin64.decodeBase64()
