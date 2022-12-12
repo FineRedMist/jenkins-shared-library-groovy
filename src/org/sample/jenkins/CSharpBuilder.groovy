@@ -294,6 +294,7 @@ class CSharpBuilder {
 
     private void setBuildStatus(String message, GitHubStatus state) {
         if(!config || !config.getSendGitHubStatus()) {
+            script.echo "Skipping setting the build status, GitHub status notifications are disabled."
             return
         }
         String gitRepo = ""
@@ -312,6 +313,7 @@ class CSharpBuilder {
         if(gitRepo.length() == 0
             || gitOwner.length() == 0
             || gitSha.length() == 0) {
+            script.echo "Could not identify the GitHub repository, owner, or SHA digest of the commit."
             return
         }
 
