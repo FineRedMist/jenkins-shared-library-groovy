@@ -19,7 +19,7 @@ The script is driven by a Configuration.json that is in the root of the reposito
     * The default value of 'CoverageThresholds' is:
 
 ```json
-{
+[
     {
         "thresholdTarget": "Group",
         "unhealthyThreshold": 100.0
@@ -58,7 +58,7 @@ The script is driven by a Configuration.json that is in the root of the reposito
         "unhealthyThreshold": 0.0, 
         "unstableThreshold": 0.0
     }
-}
+]
 ```
 
 Extra configuration:

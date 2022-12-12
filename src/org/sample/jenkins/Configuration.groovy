@@ -19,7 +19,7 @@ class Configuration {
     private String gitHubStatusName = null
     private String gitHubStatusCredentialsId = null
     private String nugetKeyCredentialsId = null
-    private Map coverageThresholds = [
+    private List coverageThresholds = [
                     [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
                     [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
                     [thresholdTarget: 'File', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
