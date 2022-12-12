@@ -8,11 +8,11 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import groovy.xml.*
 
 class CSharpBuilder {
-    List testResults = []
     List analyses = []
     CpsScript script
     def env = {}
     Configuration config = null
+    SlackBuilder slack = null
 
     CSharpBuilder(CpsScript script) {
         this.script = script
@@ -32,9 +32,9 @@ class CSharpBuilder {
                     analyses << analysisIssues
                     def analysisText = getAnaylsisResultsText(analysisIssues)
                     if(analysisText.length() > 0) {
-                        testResults << "Build warnings and errors:\n" + analysisText
+                        slack.addThreadedMessage("Build warnings and errors:\n" + analysisText)
                     } else {
-                        testResults << "No build warnings or errors."
+                        slack.addThreadedMessage("No build warnings or errors.")
                     }
                     // Rescan. If we collect and then aggregate, warnings become errors
                     script.recordIssues(aggregatingResults: true, skipPublishingChecks: true, tool: script.msBuild())
@@ -68,6 +68,8 @@ class CSharpBuilder {
         // Can't access files until we have a node and workspace.
         config = Configuration.read(script, 'Configuration.json')
 
+        slack = new SlackBuilder(script, config)
+
         // Configure properties and triggers.
         List properties = []
         List triggers = []
@@ -99,7 +101,7 @@ class CSharpBuilder {
         script.stage('Publish Test Output') {
             def tests = gatherTestResults('TestResults/**/*.trx')
             def coverage = gatherCoverageResults('TestResults/**/In/**/*.cobertura.xml')
-            testResults << "\n${tests}\n${coverage}"
+            slack.addThreadedMessage("\n${tests}\n${coverage}")
             script.mstest(testResultsFile:"TestResults/**/*.trx", failOnError: true, keepLongStdio: true)
         }
         script.stage('Publish Code Coverage') {
@@ -145,9 +147,9 @@ class CSharpBuilder {
             analyses << analysisIssues
             def analysisText = getAnaylsisResultsText(analysisIssues)
             if(analysisText.length() > 0) {
-                testResults << "Static analysis results:\n" + analysisText
+                slack.addThreadedMessage("Static analysis results:\n" + analysisText)
             } else {
-                testResults << "No static analysis issues to report."
+                slack.addThreadedMessage("No static analysis issues to report.")
             }
             // Rescan. If we collect and then aggregate, warnings become errors
             script.recordIssues(aggregatingResults: true, enabledForFailure: true, failOnError: true, skipPublishingChecks: true, tool: script.sarif(pattern: 'sast-report.sarif'))
@@ -212,15 +214,8 @@ class CSharpBuilder {
         }
     }
 
-    private void notifyBuildStatus(BuildNotifyStatus status, List<String> testResults = []) {
-        if(config && config.getSendSlack() && (status != BuildNotifyStatus.Pending || config.getSendSlackStartNotification())) {
-            def sent = script.slackSend(channel: config.getSlackChannel(), color: status.slackColour, message: "Build ${status.notifyText}: <${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}>")
-            testResults.each { message ->
-                if(message.length() > 0) {
-                    script.slackSend(channel: sent.threadId, color: status.slackColour, message: message)
-                }
-            }
-        }
+    private void notifyBuildStatus(BuildNotifyStatus status) {
+        slack.sned(status)
         setBuildStatus("Build ${status.notifyText}", status.githubStatus)
     }
 
