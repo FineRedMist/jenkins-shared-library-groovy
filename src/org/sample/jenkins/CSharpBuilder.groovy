@@ -239,7 +239,9 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status) {
-        slack.send(status)
+        if(slack) {
+            slack.send(status)
+        }
         status.githubStatus.setStatus(config, "Build ${status.notifyText}")
     }
 
