@@ -24,7 +24,9 @@ class CSharpBuilder {
             try {
                 wrappedRun()
             } catch (e) {
-                slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                if(slack) {
+                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                }
                 notifyBuildStatus(BuildNotifyStatus.Failure)
                 throw e
             } finally {
@@ -40,7 +42,9 @@ class CSharpBuilder {
                         script.echo("Unexpected build status! ${currentResult}")
                     }
                 } catch (e) {
-                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                    if(slack) {
+                        slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                    }
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                 } finally {
                     script.cleanWs()
