@@ -17,18 +17,6 @@ class CSharpBuilder {
     CSharpBuilder(CpsScript script) {
         this.script = script
         this.env = script.env
-
-        // Populate the workspace
-        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
-
-        // Can't access files until we have a node and workspace.
-        config = Configuration.read(script, 'Configuration.json')
-        
-        initializeScriptProperties()
-
-        slack = new SlackBuilder(config)
-
-        populateStages()
     }
 
     void addStage(String name, Closure method) {
@@ -94,6 +82,17 @@ class CSharpBuilder {
 
     private void wrappedRun()
     {
+        // Populate the workspace
+        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
+
+        // Can't access files until we have a node and workspace.
+        config = Configuration.read(script, 'Configuration.json')
+        
+        initializeScriptProperties()
+
+        slack = new SlackBuilder(config)
+
+        populateStages()
         stages.each { stg ->
             script.stage(stg.name) {
                 if(stg.runIfTrue && !stg.runIfTrue()) {
