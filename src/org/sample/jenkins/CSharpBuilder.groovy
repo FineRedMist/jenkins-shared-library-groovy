@@ -190,7 +190,7 @@ class CSharpBuilder {
                 }
             },
             {
-                if(!isMainBranch) {
+                if(!isMainBranch()) {
                     script.echo "Nuget publishing is disabled outside the main branch."
                     return false
                 }
