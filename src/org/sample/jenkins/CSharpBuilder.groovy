@@ -209,7 +209,7 @@ class CSharpBuilder {
 
         script.findFiles(glob: searchPath).each { f ->
             String fullName = f
-            String data = readTextFile(script, fullName)
+            String data = Utils.readTextFile(script, fullName)
             
             def xml = new XmlParser(false, true, true).parseText(data)
             Map temp = closure.call(xml)
