@@ -6,17 +6,41 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 class CSharpBuilder {
-    List analyses = []
-    CpsScript script
-    def env = {}
-    Configuration config = null
-    SlackBuilder slack = null
-    List stages = []
+    private List analyses = []
+    private CpsScript script
+    private def env = {}
+    private Configuration config = null
+    private SlackBuilder slack = null
+    private List stages = []
 
 
     CSharpBuilder(CpsScript script) {
         this.script = script
         this.env = script.env
+
+        // Populate the workspace
+        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
+
+        // Can't access files until we have a node and workspace.
+        config = Configuration.read(script, 'Configuration.json')
+        
+        initializeScriptProperties()
+
+        slack = new SlackBuilder(config)
+
+        populateStages()
+    }
+
+    void addStage(String name, Closure method) {
+        addStageIfTrue(name, method, null)
+    }
+
+    void addStageIfTrue(String name, Closure method, Closure runIfTrue) {
+        stages << [
+            name: name,
+            run: method,
+            runIfTrue: runIfTrue
+        ]
     }
 
     void run(nodeLabel = null) {
@@ -70,18 +94,6 @@ class CSharpBuilder {
 
     private void wrappedRun()
     {
-        // Populate the workspace
-        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
-
-        // Can't access files until we have a node and workspace.
-        config = Configuration.read(script, 'Configuration.json')
-        
-        initializeScriptProperties()
-
-        slack = new SlackBuilder(config)
-
-        populateStages()
-
         stages.each { stg ->
             script.stage(stg.name) {
                 if(stg.runIfTrue && !stg.runIfTrue()) {
@@ -143,9 +155,7 @@ class CSharpBuilder {
 
                 def slnFile = getSolutionFile()
 
-                script.bat("""
-                    dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
-                    """)
+                script.bat("dotnet security-scan \"${slnFile}\" --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif")
 
                 scanBuild("Static analysis results", "No static analysis issues to report", script.sarif(pattern: 'sast-report.sarif'), true, true)
             })
@@ -183,9 +193,7 @@ class CSharpBuilder {
                     // Find all the nuget packages to publish.
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
-                        script.bat("""
-                            dotnet nuget push \"${nugetPkg}\" --api-key "%APIKey%" --source "${nugetSource}"
-                            """)
+                        script.bat("dotnet nuget push \"${nugetPkg}\" --api-key \"%APIKey%\" --source \"${nugetSource}\"")
                     }
                 }
             },
@@ -200,18 +208,6 @@ class CSharpBuilder {
                 }
                 return true
             })
-    }
-
-    private void addStage(String name, Closure method) {
-        addStageIfTrue(name, method, null)
-    }
-
-    private void addStageIfTrue(String name, Closure method, Closure runIfTrue) {
-        stages << [
-            name: name,
-            run: method,
-            runIfTrue: runIfTrue
-        ]
     }
 
     private String getSolutionFile() {
