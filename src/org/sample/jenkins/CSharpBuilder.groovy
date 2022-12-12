@@ -206,28 +206,25 @@ class CSharpBuilder {
     }
 
     private String gatherTestResults(String searchPath) {
-        def total = 0
-        def passed = 0
-        def failed = 0
-
-        script.findFiles(glob: searchPath).each { f ->
-            String fullName = f
-
-            def data = Utils.readTextFile(script, fullName)
-
-            def trx = new XmlParser(false, true, true).parseText(data)
-
+        Map results = gatherResults(searchPath, {xml ->
             def counters = trx['ResultSummary']['Counters']
 
-            // echo 'Getting counter values...'
-            total += counters['@total'][0].toInteger()
-            passed += counters['@passed'][0].toInteger()
-            failed += counters['@failed'][0].toInteger()
-        }
+            return {
+                total: counters['@total'][0].toInteger(),
+                passed: counters['@passed'][0].toInteger(),
+                failed: counters['@failed'][0].toInteger()
+            }
+        })
 
-        if(total == 0) {
+        if(results['files'] == 0) {
             return "No test results found."
-        } else if(failed == 0) {
+        } 
+        
+        def total = results['total']
+        def passed = results['passed']
+        def failed = results['failed']
+
+        if(failed == 0) {
             if(passed == 1) {
                 return "The only test passed!"
             } else {
@@ -238,9 +235,8 @@ class CSharpBuilder {
         }
     }
 
-    private String gatherCoverageResults(String searchPath) {
-        def linesCovered = 0
-        def linesValid = 0
+    private Map gatherResults(String searchPath, Closure<Map> closure) {
+        Map results = {}
         def files = 0
 
         script.findFiles(glob: searchPath).each { f ->
@@ -248,21 +244,46 @@ class CSharpBuilder {
 
             def data = Utils.readTextFile(script, fullName)
 
-            def cover = new XmlParser(false, true, true).parseText(data)
+            def xml = new XmlParser(false, true, true).parseText(data)
 
-            linesCovered += cover['@lines-covered'].toInteger()
-            linesValid += cover['@lines-valid'].toInteger()
+            Map temp = closure(xml)
+            temp.each { key, value ->
+                if(results.containsKey(key)) {
+                    results[key] += value
+                } else {
+                    results[key] = value
+                }
+            }
             files += 1
         }
 
-        if(files == 0) {
+        results['files'] = files
+
+        return results
+    }
+
+    private String gatherCoverageResults(String searchPath) {
+
+        Map results = gatherResults(searchPath { xml ->
+            return {
+                linesCovered: cover['@lines-covered'].toInteger(),
+                linesValid: cover['@lines-valid'].toInteger()
+            }            
+        })
+
+        if(results['files'] == 0) {
             return "No code coverage results were found to report."
-        } else if(linesValid == 0) {
+        } 
+
+        def linesCovered = results['linesCovered']
+        def linesValid = results['linesValid']
+
+        if(linesCovered == 0) {
             return "No code lines were found to collect test coverage for."
-        } else {
-            def pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
-            return "${linesCovered} of ${linesValid} lines were covered by testing (${pct.round(1)}%)."
         }
+        
+        def pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
+        return "${linesCovered} of ${linesValid} lines were covered by testing (${pct.round(1)}%)."
     }
 
     private String getAnaylsisResultsText(def analysisResults) {
