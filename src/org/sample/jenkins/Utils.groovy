@@ -25,12 +25,11 @@ class Utils {
 
         script.findFiles(glob: searchPath).each { f ->
             String fullName = f
-
-            def data = readTextFile(script, fullName)
-
+            String data = readTextFile(script, fullName)
+            
             def xml = new XmlParser(false, true, true).parseText(data)
-
             Map temp = closure(xml)
+
             temp.each { key, value ->
                 if(results.containsKey(key)) {
                     results[key] += value
