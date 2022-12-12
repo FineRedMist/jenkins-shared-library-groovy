@@ -19,6 +19,16 @@ class Configuration {
     private String gitHubStatusName = null
     private String gitHubStatusCredentialsId = null
     private String nugetKeyCredentialsId = null
+    private Map coverageThresholds = [
+                    [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
+                    [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
+                    [thresholdTarget: 'File', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                    [thresholdTarget: 'Class', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                    [thresholdTarget: 'Method', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                    [thresholdTarget: 'Instruction', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
+                    [thresholdTarget: 'Line', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
+                    [thresholdTarget: 'Conditional', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
+                ]
 
     private Configuration() {
     }
@@ -46,6 +56,7 @@ class Configuration {
         config.gitHubStatusCredentialsId = getValue(data, 'GitHubStatusCredentialsId', config.gitHubStatusCredentialsId)
         config.slackChannel = getValue(data, 'SlackChannel', config.slackChannel)
         config.nugetKeyCredentialsId = getValue(data, 'NugetKeyCredentialsId', config.nugetKeyCredentialsId)
+        config.coverageThresholds = getValue(data, 'CoverageThresholds', config.coverageThresholds)
 
         return config
     }
@@ -117,5 +128,9 @@ class Configuration {
 
     String getGitHubStatusCredentialsId() {
         return gitHubStatusCredentialsId
+    }
+
+    Map getCoverageThresholds() {
+        return coverageThresholds
     }
 }

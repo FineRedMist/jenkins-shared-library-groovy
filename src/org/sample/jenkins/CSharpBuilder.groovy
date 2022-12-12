@@ -99,16 +99,7 @@ class CSharpBuilder {
         }
         script.stage('Publish Code Coverage') {
             script.publishCoverage(adapters: [
-                script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: [
-                [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
-                [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
-                [thresholdTarget: 'File', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
-                [thresholdTarget: 'Class', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
-                [thresholdTarget: 'Method', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
-                [thresholdTarget: 'Instruction', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
-                [thresholdTarget: 'Line', unhealthyThreshold: 50.0, unstableThreshold: 85.0],
-                [thresholdTarget: 'Conditional', unhealthyThreshold: 0.0, unstableThreshold: 0.0],
-                ])
+                script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: config.getCoverageThresholds())
             ], failNoReports: true, failUnhealthy: true, calculateDiffForChangeRequests: true)
         }
         script.stage('Clean') {
