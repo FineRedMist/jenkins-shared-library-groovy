@@ -203,32 +203,6 @@ class CSharpBuilder {
         status.githubStatus.setStatus(config, "Build ${status.notifyText}")
     }
 
-    static Map gatherXmlResults(CpsScript script, String searchPath, Closure<Map> closure) {
-        Map results = [:]
-        def files = 0
-
-        script.findFiles(glob: searchPath).each { f ->
-            String fullName = f
-            String data = Utils.readTextFile(script, fullName)
-            
-            def xml = new XmlParser(false, true, true).parseText(data)
-            Map temp = closure.call(xml)
-
-            temp.each { key, value ->
-                if(results.containsKey(key)) {
-                    results[key] += value
-                } else {
-                    results[key] = value
-                }
-            }
-            files += 1
-        }
-
-        results.files = files
-
-        return results
-    }
-
     private String gatherTestResults(String searchPath) {
         Closure<Map> gatherer = { xml ->
             def counters = xml['ResultSummary']['Counters']
@@ -239,7 +213,7 @@ class CSharpBuilder {
                 failed: counters['@failed'][0].toInteger()
             ]
         }
-        Map results = gatherXmlResults(script, searchPath, gatherer)
+        Map results = Generic.gatherXmlResults(script, searchPath, gatherer)
 
         if(results.files == 0) {
             return "No test results found."
@@ -268,7 +242,7 @@ class CSharpBuilder {
             ]
         }
 
-        Map results = gatherXmlResults(script, searchPath, gatherer)
+        Map results = Generic.gatherXmlResults(script, searchPath, gatherer)
 
         if(results.files == 0) {
             return "No code coverage results were found to report."
