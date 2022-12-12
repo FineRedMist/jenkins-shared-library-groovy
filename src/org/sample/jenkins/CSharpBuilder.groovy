@@ -121,17 +121,8 @@ class CSharpBuilder {
             script.bat("dotnet new tool-manifest")
             script.bat("dotnet tool install --local security-scan --no-cache")
 
-            def slnFile = ""
-            // Search the repository for a file ending in .sln.
-            script.findFiles(glob: '**').each {
-                def path = it.toString();
-                if(path.toLowerCase().endsWith('.sln')) {
-                    slnFile = path;
-                }
-            }
-            if(slnFile.length() == 0) {
-                throw new Exception('No solution files were found to build in the root of the git repository.')
-            }
+            def slnFile = getSolutionFile()
+
             script.bat("""
                 dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
                 """)
@@ -145,12 +136,7 @@ class CSharpBuilder {
                 script.echo "Both 'NugetSource' and 'NugetKeyCredentialsId' are required to for nuget operations."
                 Utils.markStageSkippedForConditional('Preexisting NuGet Package Check')
             } else {
-                def tool = script.tool('NuGet-2022')
-                def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source \"${nugetSource}\"")
-                packageText = packageText.replaceAll("\r", "")
-                def packages = new ArrayList(packageText.split("\n").toList())
-                packages.removeAll { line -> line.toLowerCase().startsWith("warning: ") }
-                packages = packages.collect { pkg -> pkg.replaceAll(' ', '.') }
+                def packages = getPublishedNugetPackages(nugetSource)
 
                 def nupkgFiles = "**/*.nupkg"
                 script.findFiles(glob: nupkgFiles).each { nugetPkg ->
@@ -184,6 +170,36 @@ class CSharpBuilder {
         }
     }
 
+    private String getSolutionFile() {
+        def slnFile = ""
+        def count = 0
+        // Search the repository for a file ending in .sln.
+        script.findFiles(glob: '**').each {
+            def path = it.toString();
+            if(path.toLowerCase().endsWith('.sln')) {
+                slnFile = path;
+                count += 1
+                if(count > 1) {
+                    throw new Exception('Too many solution files were found in the repository.')
+                }
+            }
+        }
+        if(slnFile.length() == 0) {
+            throw new Exception('No solution files were found in the repository.')
+        }
+
+        return slnFile
+    }
+
+    private List getPublishedNugetPackages(String nugetSource) {
+        def tool = script.tool('NuGet-2022')
+        def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source \"${nugetSource}\"")
+        packageText = packageText.replaceAll('\r', '')
+        def packages = new ArrayList(packageText.split('\n').toList())
+        packages.removeAll { line -> line.toLowerCase().startsWith('warning: ') }
+        return packages.collect { pkg -> pkg.replaceAll(' ', '.') }
+    }
+    
     private void scanBuild(String found, String notFound, def tool, boolean enabledForFailure = false, boolean failOnError = false) {
         def analysisIssues = script.scanForIssues(tool: tool)
         analyses << analysisIssues
