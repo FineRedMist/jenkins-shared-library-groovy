@@ -80,9 +80,10 @@ class CSharpBuilder {
 
         slack = new SlackBuilder(config)
 
-        addStageIfTrue('Send Start Notification', {
-            notifyBuildStatus(BuildNotifyStatus.Pending)
-        }, slack.isEnabledForStart)
+        addStageIfTrue(
+            'Send Start Notification', 
+            { notifyBuildStatus(BuildNotifyStatus.Pending) }, 
+            { return slack.isEnabledForStart() })
 
         stages.each { stg ->
             script.stage(stg.name) {
