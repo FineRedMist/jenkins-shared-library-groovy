@@ -42,8 +42,8 @@ enum GitHubStatus {
             return
         }
 
-        script.echo "Setting build status for owner ${gitOwner} and repository ${gitRepo} to: (${state}) ${message}"
-        githubNotify(credentialsId: config.getGitHubStatusCredentialsId(), repo: gitRepo, account: gitOwner, sha: gitSha, context: config.getGitHubStatusName(), description: message, status: githubState, targetUrl: env.BUIlD_URL)
+        script.echo "Setting build status for owner ${gitOwner} and repository ${gitRepo} to: (${githubState}) ${message}"
+        script.githubNotify(credentialsId: config.getGitHubStatusCredentialsId(), repo: gitRepo, account: gitOwner, sha: gitSha, context: config.getGitHubStatusName(), description: message, status: githubState, targetUrl: env.BUIlD_URL)
     }
 
 }
