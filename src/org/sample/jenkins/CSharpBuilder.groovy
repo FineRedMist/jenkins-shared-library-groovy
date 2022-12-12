@@ -83,6 +83,9 @@ class CSharpBuilder {
         script.stage('Setup for forensics') {
             script.discoverGitReferenceBuild()
         }
+        script.stage('Get Environment') {
+            script.bat("set")
+        }
         script.stage('Restore NuGet For Solution') {
             //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
             script.bat("dotnet restore --nologo --no-cache")
