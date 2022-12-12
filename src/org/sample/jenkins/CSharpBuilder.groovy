@@ -11,6 +11,8 @@ class CSharpBuilder {
     def env = {}
     Configuration config = null
     SlackBuilder slack = null
+    List stages = []
+
 
     CSharpBuilder(CpsScript script) {
         this.script = script
@@ -51,16 +53,7 @@ class CSharpBuilder {
         return env.BRANCH_NAME.toLowerCase() in ['main', 'master']
     }
 
-    private void wrappedRun()
-    {
-        // Populate the workspace
-        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
-
-        // Can't access files until we have a node and workspace.
-        config = Configuration.read(script, 'Configuration.json')
-
-        slack = new SlackBuilder(config)
-
+    private void initializeScriptProperties() {
         // Configure properties and triggers.
         List properties = []
         List triggers = []
@@ -69,10 +62,34 @@ class CSharpBuilder {
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
         script.properties(properties)
+    }
 
-        script.stage('Send Start Notification') {
+    private void wrappedRun()
+    {
+        // Populate the workspace
+        script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
+
+        // Can't access files until we have a node and workspace.
+        config = Configuration.read(script, 'Configuration.json')
+        
+        initializeScriptProperties()
+
+        slack = new SlackBuilder(config)
+
+        addStageIfTrue('Send Start Notification', {
             notifyBuildStatus(BuildNotifyStatus.Pending)
+        }, slack.isEnabledForStart)
+
+        stages.each { stg ->
+            script.stage(stg.name) {
+                if(!stg.runIfTrue || !stg.runIfTrue()) {
+                    Utils.markStageSkippedForConditional(stg.name)
+                } else {
+                    stg.run()
+                }
+            }
         }
+
         script.stage('Setup for forensics') {
             script.discoverGitReferenceBuild()
         }
@@ -160,6 +177,18 @@ class CSharpBuilder {
                 Utils.markStageSkippedForConditional('NuGet Publish')
             }
         }
+    }
+
+    private void addStage(String name, Closure method) {
+        addStageIfTrue(name, method, null)
+    }
+
+    private void addStageIfTrue(String name, Closure method, Closure<boolean> runIfTrue) {
+        stages << [
+            name: name,
+            run: method,
+            runIfTrue: runIfTrue
+        ]
     }
 
     private String getSolutionFile() {

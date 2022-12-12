@@ -15,14 +15,23 @@ class SlackBuilder {
         this.env = config.env
     }
 
+    boolean isEnabled() {
+        return config 
+            && config.getSendSlack() 
+    }
+
+    boolean isEnabledForStart() {
+        return isEnabled() 
+        && config.getSendSlackStartNotification()
+    }
+
     void addThreadedMessage(String message) {
         threadedMessages << message
     }
 
     void send(BuildNotifyStatus status) {
-        if(!config 
-            || !config.getSendSlack() 
-            || (status == BuildNotifyStatus.Pending && !config.getSendSlackStartNotification())) {
+        if(!isEnabled()
+            || (status == BuildNotifyStatus.Pending && !isEnabledForStart())) {
             return
         }
 
