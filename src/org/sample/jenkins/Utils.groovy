@@ -2,6 +2,8 @@ package org.sample.jenkins
 
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 
+import groovy.xml.*
+
 class Utils {
     static String readTextFile(CpsScript script, String filePath) {
         def bin64 = script.readFile(file: filePath, encoding: 'Base64')
@@ -16,4 +18,32 @@ class Utils {
             return new String(binDat)
         }
     }
+
+    Map gatherXmlResults(CpsScript script, String searchPath, Closure<Map> closure) {
+        Map results = {}
+        def files = 0
+
+        script.findFiles(glob: searchPath).each { f ->
+            String fullName = f
+
+            def data = Utils.readTextFile(script, fullName)
+
+            def xml = new XmlParser(false, true, true).parseText(data)
+
+            Map temp = closure(xml)
+            temp.each { key, value ->
+                if(results.containsKey(key)) {
+                    results[key] += value
+                } else {
+                    results[key] = value
+                }
+            }
+            files += 1
+        }
+
+        results['files'] = files
+
+        return results
+    }
+
 }

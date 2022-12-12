@@ -5,8 +5,6 @@ import org.sample.Jenkins.*
 import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
-import groovy.xml.*
-
 class CSharpBuilder {
     List analyses = []
     CpsScript script
@@ -206,7 +204,7 @@ class CSharpBuilder {
     }
 
     private String gatherTestResults(String searchPath) {
-        Map results = gatherResults(searchPath, {xml ->
+        Map results = Utils.gatherXmlResults(script, searchPath, {xml ->
             def counters = trx['ResultSummary']['Counters']
 
             return {
@@ -235,36 +233,9 @@ class CSharpBuilder {
         }
     }
 
-    private Map gatherResults(String searchPath, Closure<Map> closure) {
-        Map results = {}
-        def files = 0
-
-        script.findFiles(glob: searchPath).each { f ->
-            String fullName = f
-
-            def data = Utils.readTextFile(script, fullName)
-
-            def xml = new XmlParser(false, true, true).parseText(data)
-
-            Map temp = closure(xml)
-            temp.each { key, value ->
-                if(results.containsKey(key)) {
-                    results[key] += value
-                } else {
-                    results[key] = value
-                }
-            }
-            files += 1
-        }
-
-        results['files'] = files
-
-        return results
-    }
-
     private String gatherCoverageResults(String searchPath) {
 
-        Map results = gatherResults(searchPath { xml ->
+        Map results = Utils.gatherXmlResults(script, searchPath { xml ->
             return {
                 linesCovered: cover['@lines-covered'].toInteger(),
                 linesValid: cover['@lines-valid'].toInteger()
