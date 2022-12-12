@@ -26,16 +26,7 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
-                    def analysisIssues = script.scanForIssues(tool: script.msBuild())
-                    analyses << analysisIssues
-                    def analysisText = getAnaylsisResultsText(analysisIssues)
-                    if(analysisText.length() > 0) {
-                        slack.addThreadedMessage("Build warnings and errors:\n" + analysisText)
-                    } else {
-                        slack.addThreadedMessage("No build warnings or errors.")
-                    }
-                    // Rescan. If we collect and then aggregate, warnings become errors
-                    script.recordIssues(aggregatingResults: true, skipPublishingChecks: true, tool: script.msBuild())
+                    scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
 
                     def currentResult = script.currentBuild.result ?: 'SUCCESS'
                     if (currentResult == 'UNSTABLE') {
@@ -144,16 +135,7 @@ class CSharpBuilder {
                 dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
                 """)
 
-            def analysisIssues = script.scanForIssues(tool: script.sarif(pattern: 'sast-report.sarif'))
-            analyses << analysisIssues
-            def analysisText = getAnaylsisResultsText(analysisIssues)
-            if(analysisText.length() > 0) {
-                slack.addThreadedMessage("Static analysis results:\n" + analysisText)
-            } else {
-                slack.addThreadedMessage("No static analysis issues to report.")
-            }
-            // Rescan. If we collect and then aggregate, warnings become errors
-            script.recordIssues(aggregatingResults: true, enabledForFailure: true, failOnError: true, skipPublishingChecks: true, tool: script.sarif(pattern: 'sast-report.sarif'))
+            scanBuild("Static analysis results", "No static analysis issues to report", script.sarif(pattern: 'sast-report.sarif'), true, true)
         }
         script.stage('Preexisting NuGet Package Check') {
             // Find all the nuget packages to publish.
@@ -199,6 +181,19 @@ class CSharpBuilder {
                 Utils.markStageSkippedForConditional('NuGet Publish')
             }
         }
+    }
+
+    private void scanBuild(String found, String notFound, def tool, boolean enableForFailure = false, boolean failOnError = false) {
+        def analysisIssues = script.scanForIssues(tool: tool)
+        analyses << analysisIssues
+        def analysisText = getAnaylsisResultsText(analysisIssues)
+        if(analysisText.length() > 0) {
+            slack.addThreadedMessage("${found}:\n" + analysisText)
+        } else {
+            slack.addThreadedMessage("${notfound}.")
+        }
+        // Rescan. If we collect and then aggregate, warnings become errors
+        script.recordIssues(aggregatingResults: true, enabledForFailure: enabledForFailure, failOnError: failOnError, skipPublishingChecks: true, tool: tool)
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status) {
