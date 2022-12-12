@@ -204,8 +204,8 @@ class CSharpBuilder {
     }
 
     private String gatherTestResults(String searchPath) {
-        Map results = Utils.gatherXmlResults(script, searchPath, {xml ->
-            def counters = trx['ResultSummary']['Counters']
+        Map results = Utils.gatherXmlResults(script, searchPath, { xml ->
+            def counters = xml['ResultSummary']['Counters']
 
             return [
                 total: counters['@total'][0].toInteger(),
@@ -237,8 +237,8 @@ class CSharpBuilder {
 
         Map results = Utils.gatherXmlResults(script, searchPath { xml ->
             return [
-                linesCovered: cover['@lines-covered'].toInteger(),
-                linesValid: cover['@lines-valid'].toInteger()
+                linesCovered: xml['@lines-covered'].toInteger(),
+                linesValid: xml['@lines-valid'].toInteger()
             ]
         })
 

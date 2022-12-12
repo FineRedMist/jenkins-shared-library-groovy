@@ -19,7 +19,7 @@ class Utils {
         }
     }
 
-    static Map gatherXmlResults(CpsScript script, String searchPath, Closure closure) {
+    static Map gatherXmlResults(CpsScript script, String searchPath, def closure) {
         Map results = [:]
         def files = 0
 
