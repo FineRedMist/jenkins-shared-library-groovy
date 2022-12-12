@@ -203,7 +203,7 @@ class CSharpBuilder {
         status.githubStatus.setStatus(config, "Build ${status.notifyText}")
     }
 
-    static Map gatherXmlResults(CpsScript script, String searchPath, def closure) {
+    static Map gatherXmlResults(CpsScript script, String searchPath, Closure<Map> closure) {
         Map results = [:]
         def files = 0
 
@@ -212,7 +212,7 @@ class CSharpBuilder {
             String data = readTextFile(script, fullName)
             
             def xml = new XmlParser(false, true, true).parseText(data)
-            Map temp = closure(xml)
+            Map temp = closure.call(xml)
 
             temp.each { key, value ->
                 if(results.containsKey(key)) {
