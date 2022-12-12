@@ -80,10 +80,7 @@ class CSharpBuilder {
 
         slack = new SlackBuilder(config)
 
-        addStageIfTrue(
-            'Send Start Notification', 
-            { notifyBuildStatus(BuildNotifyStatus.Pending) }, 
-            { return slack.isEnabledForStart() })
+        populateStages()
 
         stages.each { stg ->
             script.stage(stg.name) {
@@ -94,64 +91,71 @@ class CSharpBuilder {
                 }
             }
         }
+    }
 
-        script.stage('Setup for forensics') {
-            script.discoverGitReferenceBuild()
-        }
-        script.stage('Get Environment') {
-            script.bat("set")
-        }
-        script.stage('Restore NuGet For Solution') {
-            //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
-            script.bat("dotnet restore --nologo --no-cache")
-        }
-        script.stage('Build Solution - Debug') {
-            script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
-        }
-        script.stage('Run Tests') {
-            // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
-            script.bat("""
-                dotnet test --nologo -c Debug --results-directory TestResults --logger trx --collect:"XPlat code coverage" --no-restore --no-build
-                """)
-        }
-        script.stage('Publish Test Output') {
-            def tests = gatherTestResults('TestResults/**/*.trx')
-            def coverage = gatherCoverageResults('TestResults/**/In/**/*.cobertura.xml')
-            slack.addThreadedMessage("\n${tests}\n${coverage}")
-            script.mstest(testResultsFile:"TestResults/**/*.trx", failOnError: true, keepLongStdio: true)
-        }
-        script.stage('Publish Code Coverage') {
-            script.publishCoverage(adapters: [
-                script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: config.getCoverageThresholds())
-            ], failNoReports: true, failUnhealthy: true, calculateDiffForChangeRequests: true)
-        }
-        script.stage('Clean') {
-            script.bat("dotnet clean --nologo")
-        }
-        script.stage('Build Solution - Release') {
-            script.bat("dotnet build --nologo -c Release -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore")
-        }
-        script.stage('Run Security Scan') {
-            script.bat("dotnet new tool-manifest")
-            script.bat("dotnet tool install --local security-scan --no-cache")
+    private void populateStages() {
 
-            def slnFile = getSolutionFile()
+        addStage('Send Start Notification', 
+            { notifyBuildStatus(BuildNotifyStatus.Pending) })
 
-            script.bat("""
-                dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
-                """)
+        addStage('Setup for forensics',
+            { script.discoverGitReferenceBuild() })
 
-            scanBuild("Static analysis results", "No static analysis issues to report", script.sarif(pattern: 'sast-report.sarif'), true, true)
-        }
-        script.stage('Preexisting NuGet Package Check') {
-            // Find all the nuget packages to publish.
-            def nugetSource = config.getNugetSource()
-            if(!nugetSource) {
-                script.echo "Both 'NugetSource' and 'NugetKeyCredentialsId' are required to for nuget operations."
-                Utils.markStageSkippedForConditional('Preexisting NuGet Package Check')
-            } else {
+        addStage('Get Environment', 
+            { script.bat("set") })
+
+        //  '--no-cache' to avoid a shared cache--if multiple projects are running NuGet restore, they can collide.
+        addStage('Restore NuGet For Solution',
+            { script.bat("dotnet restore --nologo --no-cache") })
+
+        addStage('Build Solution - Debug',
+            { script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+            
+        // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
+        addStage('Run Tests', 
+            { script.bat("dotnet test --nologo -c Debug --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
+ 
+        addStage('Publish Test Output', 
+            {
+                def tests = gatherTestResults('TestResults/**/*.trx')
+                def coverage = gatherCoverageResults('TestResults/**/In/**/*.cobertura.xml')
+                slack.addThreadedMessage("\n${tests}\n${coverage}")
+                script.mstest(testResultsFile:"TestResults/**/*.trx", failOnError: true, keepLongStdio: true)
+            })
+
+        addStage('Publish Code Coverage',
+            {
+                script.publishCoverage(adapters: [
+                    script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: config.getCoverageThresholds())
+                ], failNoReports: true, failUnhealthy: true, calculateDiffForChangeRequests: true)
+            })
+
+        addStage('Clean', 
+            { script.bat("dotnet clean --nologo") })
+
+        addStage('Build Solution - Release', 
+            { script.bat("dotnet build --nologo -c Release -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+
+        addStage('Run Security Scan',
+            {
+                script.bat("dotnet new tool-manifest")
+                script.bat("dotnet tool install --local security-scan --no-cache")
+
+                def slnFile = getSolutionFile()
+
+                script.bat("""
+                    dotnet security-scan ${slnFile} --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif
+                    """)
+
+                scanBuild("Static analysis results", "No static analysis issues to report", script.sarif(pattern: 'sast-report.sarif'), true, true)
+            })
+
+        String nugetSource = config.getNugetSource()
+        addStageIfTrue('Preexisting NuGet Package Check', 
+            {
                 def packages = getPublishedNugetPackages(nugetSource)
 
+                // Find all the nuget packages to publish.
                 def nupkgFiles = "**/*.nupkg"
                 script.findFiles(glob: nupkgFiles).each { nugetPkg ->
                     def pkgName = nugetPkg.getName()
@@ -162,14 +166,21 @@ class CSharpBuilder {
                         script.echo "The package ${nugetPkg} is not in the NuGet repository."
                     }
                 }
-            }
-        }
-        script.stage('NuGet Publish') {
-            def nugetSource = config.getNugetSource()
-            // We are only going to publish to NuGet when the branch is main or master.
-            // This way other branches will test without interfering with releases.
+            },
+            {
+                if(!nugetSource) {
+                    script.echo "The 'NugetSource' configuration setting is required to query existing published packages."
+                }
+                return nugetSource != null
+            })
+
             if(nugetSource && isMainBranch()) {
-                script.withCredentials([script.string(credentialsId: config.getNugetKeyCredentialsId(), variable: 'APIKey')]) { 
+        String nugetCredentialsId = config.getNugetKeyCredentialsId()
+        addStageIfTrue('NuGet Publish',
+            {
+                // We are only going to publish to NuGet when the branch is main or master.
+                // This way other branches will test without interfering with releases.
+                script.withCredentials([script.string(credentialsId: nugetCredentialsId, variable: 'APIKey')]) { 
                     // Find all the nuget packages to publish.
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
@@ -178,9 +189,18 @@ class CSharpBuilder {
                             """)
                     }
                 }
-            } else {
-                Utils.markStageSkippedForConditional('NuGet Publish')
-            }
+            },
+            {
+                if(!isMainBranch) {
+                    script.echo "Nuget publishing is disabled outside the main branch."
+                    return false
+                }
+                if(!nugetSource || !nugetCredentialsId) {
+                    script.echo "The 'NugetSource' and 'NugetKeyCredentialsId' configuration settings are required to publish nuget packages."
+                    return false
+                }
+                return true
+            })
         }
     }
 
