@@ -184,7 +184,7 @@ class CSharpBuilder {
         }
     }
 
-    private void scanBuild(String found, String notFound, def tool, boolean enableForFailure = false, boolean failOnError = false) {
+    private void scanBuild(String found, String notFound, def tool, boolean enabledForFailure = false, boolean failOnError = false) {
         def analysisIssues = script.scanForIssues(tool: tool)
         analyses << analysisIssues
         def analysisText = getAnaylsisResultsText(analysisIssues)
