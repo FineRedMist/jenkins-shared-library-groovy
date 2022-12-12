@@ -26,7 +26,7 @@ class Utils {
         script.findFiles(glob: searchPath).each { f ->
             String fullName = f
 
-            def data = Utils.readTextFile(script, fullName)
+            def data = readTextFile(script, fullName)
 
             def xml = new XmlParser(false, true, true).parseText(data)
 
