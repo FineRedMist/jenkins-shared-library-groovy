@@ -4,9 +4,11 @@ This is a sample library that factors out common functionality for building C# p
 The script is driven by a Configuration.json that is in the root of the repository. The expected values are:
 * Version: Typically a x.y.z version (trailing zeroes optional).
 * ScmTrigger: [optional] The frequency to poll source control for changes.
+* DefaultTestBuildConfiguration: [optional, default debug] The build configuration to use for building and running tests, code coverage, static analysis, etc.
 * Nuget Configuration Options
     * NugetSource: [optional] The nuget repository to push nuget packages to. If not set, it will not be queried or pushed to.
     * NugetKeyCredentialsId: [optional] The credentials for pushing to a nuget repository. If not set, nuget will not be queried or pushed to.
+    * DefaultNugetBuildConfiguration: [optional, default: release] The build configuration to use for building the nuget package.
 * Slack Configuration Options
     * SlackChannel: [optional] The Slack channel to post build status messages to. If not set, it will use the default channel as part of the general Slack configuration.
     * SendSlack: [optional, default true] Whether to send Slack messages.

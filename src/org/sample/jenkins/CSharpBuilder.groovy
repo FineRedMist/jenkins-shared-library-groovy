@@ -119,12 +119,12 @@ class CSharpBuilder {
         addStage('Restore NuGet For Solution',
             { script.bat("dotnet restore --nologo --no-cache") })
 
-        addStage('Build Solution - Debug',
-            { script.bat("dotnet build --nologo -c Debug -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+        addStage("Build Solution - ${config.getDefaultTestBuildConfiguration}",
+            { script.bat("dotnet build --nologo -c ${config.getDefaultTestBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
             
         // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
         addStage('Run Tests', 
-            { script.bat("dotnet test --nologo -c Debug --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
+            { script.bat("dotnet test --nologo -c ${config.getDefaultTestBuildConfiguration} --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
  
         addStage('Publish Test Output', 
             {
@@ -144,8 +144,8 @@ class CSharpBuilder {
         addStage('Clean', 
             { script.bat("dotnet clean --nologo") })
 
-        addStage('Build Solution - Release', 
-            { script.bat("dotnet build --nologo -c Release -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+        addStage("Build Solution - ${config.getDefaultNugetBuildConfiguration}", 
+            { script.bat("dotnet build --nologo -c ${config.getDefaultNugetBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
 
         addStage('Run Security Scan',
             {
@@ -208,6 +208,8 @@ class CSharpBuilder {
                 return true
             })
     }
+
+    private String exec()
 
     private String getSolutionFile() {
         def slnFile = ""
