@@ -209,8 +209,6 @@ class CSharpBuilder {
             })
     }
 
-    private String exec()
-
     private String getSolutionFile() {
         def slnFile = ""
         def count = 0
