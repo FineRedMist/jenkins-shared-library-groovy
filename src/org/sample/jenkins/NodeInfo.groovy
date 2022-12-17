@@ -1,5 +1,9 @@
 package org.sample.jenkins
 
+import org.jenkinsci.plugins.workflow.cps.CpsScript
+import jenkins.model.Jenkins
+import hudson.model.Node
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
