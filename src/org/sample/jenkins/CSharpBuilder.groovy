@@ -144,7 +144,7 @@ class CSharpBuilder {
         addStage('Clean', 
             {
                 script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo")
-                script.bat("del /s /q *.nupkg *.snupkg", returnStatus: true) // We don't care if this fails, that means it didn't find anything to delete.
+                script.bat(returnStatus: true, script: "del /s /q *.nupkg *.snupkg") // We don't care if this fails, that means it didn't find anything to delete.
             })
 
         addStage("Build Solution - ${config.getNugetBuildConfiguration()}", 
