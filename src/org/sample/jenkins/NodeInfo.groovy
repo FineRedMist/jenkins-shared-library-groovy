@@ -12,15 +12,15 @@ class NodeInfo {
     private static def nodes = new ConcurrentHashMap<>()
 
     static boolean isUnix(CpsScript script) {
-        String node = script.env.containsKey('NODE_NAME') ? script.env.NODE_NAME : null
-        if(!node) {
+        String nodeName = script.env.NODE_NAME
+        if(!nodeName) {
             throw new Exception("Attempting to determine if the platform is unix for a node outside of a node declaration.")
         }
-        if(nodes.containsKey(node)) {
-            return nodes[node]
+        if(nodes.containsKey(nodeName)) {
+            return nodes[nodeName]
         }
         boolean result = script.isUnix()
-        nodes[node] = result
+        nodes[nodeName] = result
         return result
     }
 
@@ -34,7 +34,7 @@ class NodeInfo {
     *      is not yet gone.
     */
     public static Node getNode(CpsScript script) {
-        String nodeName = script.env.containsKey('NODE_NAME') ? script.env.NODE_NAME : null
+        String nodeName = script.env.NODE_NAME
         if(!nodeName) {
             return null
         }
