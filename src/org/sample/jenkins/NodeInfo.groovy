@@ -1,8 +1,6 @@
 package org.sample.jenkins
 
 import org.jenkinsci.plugins.workflow.cps.CpsScript
-import jenkins.model.Jenkins
-import hudson.model.Node
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -22,26 +20,5 @@ class NodeInfo {
         boolean result = script.isUnix()
         nodes[nodeName] = result
         return result
-    }
-
-    /**
-    * Returns the {@link Node} that this computer represents.
-    * 
-    * From: https://www.tabnine.com/code/java/methods/jenkins.model.Jenkins/getNode (with tweaks)
-    *
-    * @return
-    *      null if the configuration has changed and the node is removed, yet the corresponding {@link Computer}
-    *      is not yet gone.
-    */
-    public static Node getNode(CpsScript script) {
-        String nodeName = script.env.NODE_NAME
-        if(!nodeName) {
-            return null
-        }
-        Jenkins j = Jenkins.getInstanceOrNull() // TODO confirm safe to assume non-null and use getInstance()
-        if (j == null) {
-            return null
-        }
-        return j.getNode(nodeName);
     }
 }

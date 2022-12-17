@@ -144,11 +144,7 @@ class CSharpBuilder {
         addStage('Clean', 
             {
                 script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo")
-                def node = NodeInfo.getNode(script)
-                script.findFiles(glob: "**/*nupkg").each { nugetPkg ->
-                    def filePath = node.createPath("${nugetPkg}")
-                    filePath.delete()
-                }
+                script.bat("del /s /q *.nupkg *.snupkg", returnStatus: true) // We don't care if this fails, that means it didn't find anything to delete.
             })
 
         addStage("Build Solution - ${config.getNugetBuildConfiguration()}", 
