@@ -29,7 +29,6 @@ class NodeInfo {
     *      null if the configuration has changed and the node is removed, yet the corresponding {@link Computer}
     *      is not yet gone.
     */
-    @CheckForNull
     public static Node getNode(CpsScript script) {
         String nodeName = script.env.containsKey('NODE_NAME') ? script.env.NODE_NAME : null
         if(!nodeName) {
