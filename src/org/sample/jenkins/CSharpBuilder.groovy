@@ -145,7 +145,8 @@ class CSharpBuilder {
             {
                 script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo")
                 script.findFiles(glob: "**/*nupkg").each { nugetPkg ->
-                    nugetPkg.delete()
+                    def filePath = script.Node.createPath("${nugetPkg}")
+                    filePath.delete()
                 }
             })
 
