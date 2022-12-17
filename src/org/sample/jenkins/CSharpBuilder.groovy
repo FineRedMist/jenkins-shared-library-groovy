@@ -142,7 +142,7 @@ class CSharpBuilder {
             })
 
         addStage('Clean', 
-            { script.bat("dotnet clean --nologo") })
+            { script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo") })
 
         addStage("Build Solution - ${config.getNugetBuildConfiguration()}", 
             { script.bat("dotnet build --nologo -c ${config.getNugetBuildConfiguration()} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
