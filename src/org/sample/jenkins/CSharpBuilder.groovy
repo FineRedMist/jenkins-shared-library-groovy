@@ -144,8 +144,9 @@ class CSharpBuilder {
         addStage('Clean', 
             {
                 script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo")
+                def node = NodeInfo.getNode(script)
                 script.findFiles(glob: "**/*nupkg").each { nugetPkg ->
-                    def filePath = script.Node.createPath("${nugetPkg}")
+                    def filePath = node.createPath("${nugetPkg}")
                     filePath.delete()
                 }
             })
