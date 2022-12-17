@@ -19,8 +19,8 @@ class Configuration {
     private String gitHubStatusName = null
     private String gitHubStatusCredentialsId = null
     private String nugetKeyCredentialsId = null
-    private String defaultTestBuildConfiguration = 'Debug'
-    private String defaultNugetBuildConfiguration = 'Release'
+    private String testBuildConfiguration = 'Debug'
+    private String nugetBuildConfiguration = 'Release'
     private List coverageThresholds = [
                     [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
                     [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
@@ -59,8 +59,8 @@ class Configuration {
         config.slackChannel = getValue(data, 'SlackChannel', config.slackChannel)
         config.nugetKeyCredentialsId = getValue(data, 'NugetKeyCredentialsId', config.nugetKeyCredentialsId)
         config.coverageThresholds = getValue(data, 'CoverageThresholds', config.coverageThresholds)
-        config.defaultTestBuildConfiguration = getValue(data, 'DefaultTestBuildConfiguration', config.defaultTestBuildConfiguration)
-        config.defaultNugetBuildConfiguration = getValue(data, 'DefaultNugetBuildConfiguration', config.defaultNugetBuildConfiguration)
+        config.testBuildConfiguration = getValue(data, 'TestBuildConfiguration', config.testBuildConfiguration)
+        config.nugetBuildConfiguration = getValue(data, 'NugetBuildConfiguration', config.nugetBuildConfiguration)
 
         return config
     }
@@ -138,10 +138,10 @@ class Configuration {
         return coverageThresholds
     }
 
-    String getDefaultTestBuildConfiguration() {
-        return defaultTestBuildConfiguration
+    String getTestBuildConfiguration() {
+        return testBuildConfiguration
     }
-    String getDefaultNugetBuildConfiguration() {
-        return defaultNugetBuildConfiguration
+    String getNugetBuildConfiguration() {
+        return nugetBuildConfiguration
     }
 }

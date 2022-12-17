@@ -119,12 +119,12 @@ class CSharpBuilder {
         addStage('Restore NuGet For Solution',
             { script.bat("dotnet restore --nologo --no-cache") })
 
-        addStage("Build Solution - ${config.getDefaultTestBuildConfiguration}",
-            { script.bat("dotnet build --nologo -c ${config.getDefaultTestBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+        addStage("Build Solution - ${config.getTestBuildConfiguration}",
+            { script.bat("dotnet build --nologo -c ${config.getTestBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
             
         // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
         addStage('Run Tests', 
-            { script.bat("dotnet test --nologo -c ${config.getDefaultTestBuildConfiguration} --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
+            { script.bat("dotnet test --nologo -c ${config.getTestBuildConfiguration} --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
  
         addStage('Publish Test Output', 
             {
@@ -144,8 +144,8 @@ class CSharpBuilder {
         addStage('Clean', 
             { script.bat("dotnet clean --nologo") })
 
-        addStage("Build Solution - ${config.getDefaultNugetBuildConfiguration}", 
-            { script.bat("dotnet build --nologo -c ${config.getDefaultNugetBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+        addStage("Build Solution - ${config.getNugetBuildConfiguration}", 
+            { script.bat("dotnet build --nologo -c ${config.getNugetBuildConfiguration} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
 
         addStage('Run Security Scan',
             {
