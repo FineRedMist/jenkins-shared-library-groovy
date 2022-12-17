@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentMap
 
 // Determine OS for the current node and cache the results.
 class NodeInfo {
-    private static ConcurrentMap<> nodes = new ConcurrentHashMap<>()
+    private static def nodes = new ConcurrentHashMap<>()
 
     static boolean isUnix(CpsScript script) {
         String node = script.env.containsKey('NODE_NAME') ? script.env.NODE_NAME : null
