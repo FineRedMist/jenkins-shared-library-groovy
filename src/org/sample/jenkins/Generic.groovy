@@ -11,9 +11,9 @@ class Generic {
      */
     static def exec(CpsScript script, String cmd, String encoding = null, String label = null, boolean returnStatus = false, boolean returnStdout = false) {
         if(NodeInfo.isUnix(script)) {
-            return script.sh script: "#!/bin/sh\n${cmd}", encoding: encoding, label: label, returnStatus: returnStatus, returnStdout: returnStdout
+            return script.sh(script: "#!/bin/sh\n${cmd}", encoding: encoding, label: label, returnStatus: returnStatus, returnStdout: returnStdout)
         } else {
-            return script.bat script: cmd, encoding: encoding, label: label, returnStatus: returnStatus, returnStdout: returnStdout
+            return script.bat(script: cmd, encoding: encoding, label: label, returnStatus: returnStatus, returnStdout: returnStdout)
         }
     }
 

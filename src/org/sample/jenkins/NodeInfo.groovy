@@ -14,11 +14,19 @@ class NodeInfo {
         if(!nodeName) {
             throw new Exception("Attempting to determine if the platform is unix for a node outside of a node declaration.")
         }
-        if(nodes.containsKey(nodeName)) {
-            return nodes[nodeName]
+        boolean result = false
+        try
+        {
+            if(nodes.containsKey(nodeName)) {
+                result = nodes[nodeName]
+                return result
+            }
+            result = script.isUnix()
+            nodes[nodeName] = result
+            return result
         }
-        boolean result = script.isUnix()
-        nodes[nodeName] = result
-        return result
+        finally {
+            script.echo("${nodeName} isUnix=${result}")
+        }
     }
 }
