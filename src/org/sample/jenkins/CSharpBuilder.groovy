@@ -32,6 +32,10 @@ class CSharpBuilder {
     }
 
     void run(nodeLabel = null) {
+        script.parameters {
+            booleanParam(name: 'clean', defaultValue: false, description: 'Whether to clean the workspace before starting.')
+        }        
+
         script.node(label: nodeLabel) {
             try {
                 wrappedRun()
@@ -80,9 +84,6 @@ class CSharpBuilder {
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
         script.properties(properties)
-        script.parameters {
-            booleanParam(name: 'clean', defaultValue: false, description: 'Whether to clean the workspace before starting.')
-        }        
     }
 
     private void wrappedRun()
