@@ -33,37 +33,35 @@ class CSharpBuilder {
 
     void run(nodeLabel = null) {
         script.node(label: nodeLabel) {
-            script.withEnv(["MSBUILDDEBUGPATH=${script.env.WORKSPACE}/logs"]) {
+            try {
+                wrappedRun()
+            } catch (e) {
+                if(slack) {
+                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                }
+                notifyBuildStatus(BuildNotifyStatus.Failure)
+                throw e
+            } finally {
                 try {
-                    wrappedRun()
+                    scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
+
+                    def currentResult = script.currentBuild.result ?: 'SUCCESS'
+                    if (currentResult == 'UNSTABLE') {
+                        notifyBuildStatus(BuildNotifyStatus.Unstable)
+                    } else if (currentResult == 'SUCCESS') {
+                        notifyBuildStatus(BuildNotifyStatus.Success)
+                    } else {
+                        script.echo("Unexpected build status! ${currentResult}")
+                    }
                 } catch (e) {
                     if(slack) {
                         slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                     }
                     notifyBuildStatus(BuildNotifyStatus.Failure)
-                    throw e
                 } finally {
-                    try {
-                        scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
-
-                        def currentResult = script.currentBuild.result ?: 'SUCCESS'
-                        if (currentResult == 'UNSTABLE') {
-                            notifyBuildStatus(BuildNotifyStatus.Unstable)
-                        } else if (currentResult == 'SUCCESS') {
-                            notifyBuildStatus(BuildNotifyStatus.Success)
-                        } else {
-                            script.echo("Unexpected build status! ${currentResult}")
-                        }
-                    } catch (e) {
-                        if(slack) {
-                            slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
-                        }
-                        notifyBuildStatus(BuildNotifyStatus.Failure)
-                    } finally {
-                        script.echo('Archiving artifacts...')
-                        script.archiveArtifacts('logs/**', allowEmptyArchive = true)
-                        script.cleanWs()
-                    }
+                    script.echo('Archiving artifacts...')
+                    script.archiveArtifacts('logs/**', allowEmptyArchive = true)
+                    script.cleanWs()
                 }
             }
         }
@@ -97,12 +95,15 @@ class CSharpBuilder {
         slack = new SlackBuilder(config)
 
         populateStages()
-        stages.each { stg ->
-            script.stage(stg.name) {
-                if(stg.runIfTrue && !stg.runIfTrue()) {
-                    Utils.markStageSkippedForConditional(stg.name)
-                } else {
-                    stg.run()
+        
+        script.withEnv(["MSBUILDDEBUGPATH=${script.env.WORKSPACE}/logs"]) {
+            stages.each { stg ->
+                script.stage(stg.name) {
+                    if(stg.runIfTrue && !stg.runIfTrue()) {
+                        Utils.markStageSkippedForConditional(stg.name)
+                    } else {
+                        stg.run()
+                    }
                 }
             }
         }
