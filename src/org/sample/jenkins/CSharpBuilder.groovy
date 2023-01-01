@@ -80,10 +80,18 @@ class CSharpBuilder {
         properties.add(script.disableResume())
         properties.add(script.pipelineTriggers(triggers))
         script.properties(properties)
+        script.parameters {
+            booleanParam(name: 'clean', defaultValue: false, description: 'Whether to clean the workspace before starting.')
+        }        
     }
 
     private void wrappedRun()
     {
+        // Clean the workspace.
+        if(script.params.clean != null && script.params.clean != false) {
+            script.cleanWs(disableDeferredWipeout=false, deleteDirs=true)
+        }
+
         // Populate the workspace
         script.checkout(script.scm).each { k,v -> env.setProperty(k, v) }
 
@@ -95,7 +103,7 @@ class CSharpBuilder {
         slack = new SlackBuilder(config)
 
         populateStages()
-        
+
         script.withEnv(["MSBUILDDEBUGPATH=${script.env.WORKSPACE}/logs"]) {
             stages.each { stg ->
                 script.stage(stg.name) {
