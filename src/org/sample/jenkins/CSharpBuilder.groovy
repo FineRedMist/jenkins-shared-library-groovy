@@ -60,7 +60,7 @@ class CSharpBuilder {
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                 } finally {
                     script.echo('Archiving artifacts...')
-                    script.archiveArtifacts(artifacts='logs/**', allowEmptyArchive=true, onlyIfSuccessful=false)
+                    script.archiveArtifacts('logs/**', allowEmptyArchive: true, onlyIfSuccessful: false)
                     script.cleanWs()
                 }
             }
@@ -89,7 +89,7 @@ class CSharpBuilder {
     {
         // Clean the workspace.
         if(script.params.clean != null && script.params.clean != false) {
-            script.cleanWs(disableDeferredWipeout=false, deleteDirs=true)
+            script.cleanWs(disableDeferredWipeout: false, deleteDirs: true)
         }
 
         // Populate the workspace
