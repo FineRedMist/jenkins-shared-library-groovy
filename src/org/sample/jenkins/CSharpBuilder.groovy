@@ -60,7 +60,7 @@ class CSharpBuilder {
                         }
                         notifyBuildStatus(BuildNotifyStatus.Failure)
                     } finally {
-                        script.archiveArtifacts('logs/**')
+                        script.archiveArtifacts('logs/**', allowEmptyArchive = true)
                         script.cleanWs()
                     }
                 }
