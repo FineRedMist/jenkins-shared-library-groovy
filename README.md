@@ -1,5 +1,5 @@
 # JenkinsLibrarySample
-This is a sample library that factors out common functionality for building C# projects for [jenkins-sample-project-dotnet](https://github.com/FineRedMist/jenkins-sample-project-dotnet)
+This is a sample library that factors out common functionality for building C# projects for [jenkins-project-sample-dotnet](https://github.com/FineRedMist/jenkins-project-sample-dotnet)
 
 The script is driven by a Configuration.json that is in the root of the repository. The expected values are:
 * Version: Typically a x.y.z version (trailing zeroes optional).
