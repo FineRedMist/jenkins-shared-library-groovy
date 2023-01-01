@@ -33,36 +33,39 @@ class CSharpBuilder {
 
     void run(nodeLabel = null) {
         script.node(label: nodeLabel) {
-            try {
-                wrappedRun()
-            } catch (e) {
-                if(slack) {
-                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
-                }
-                notifyBuildStatus(BuildNotifyStatus.Failure)
-                throw e
-            } finally {
+            script.withEnv(["MSBUILDDEBUGPATH=${script.env.WORKSPACE}/logs"]) {
                 try {
-                    scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
-
-                    def currentResult = script.currentBuild.result ?: 'SUCCESS'
-                    if (currentResult == 'UNSTABLE') {
-                        notifyBuildStatus(BuildNotifyStatus.Unstable)
-                    } else if (currentResult == 'SUCCESS') {
-                        notifyBuildStatus(BuildNotifyStatus.Success)
-                    } else {
-                        script.echo("Unexpected build status! ${currentResult}")
-                    }
+                    wrappedRun()
                 } catch (e) {
                     if(slack) {
                         slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                     }
                     notifyBuildStatus(BuildNotifyStatus.Failure)
+                    throw e
                 } finally {
-                    script.cleanWs()
+                    try {
+                        scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
+
+                        def currentResult = script.currentBuild.result ?: 'SUCCESS'
+                        if (currentResult == 'UNSTABLE') {
+                            notifyBuildStatus(BuildNotifyStatus.Unstable)
+                        } else if (currentResult == 'SUCCESS') {
+                            notifyBuildStatus(BuildNotifyStatus.Success)
+                        } else {
+                            script.echo("Unexpected build status! ${currentResult}")
+                        }
+                    } catch (e) {
+                        if(slack) {
+                            slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                        }
+                        notifyBuildStatus(BuildNotifyStatus.Failure)
+                    } finally {
+                        script.archiveArtifacts('logs/**')
+                        script.cleanWs()
+                    }
                 }
             }
-        }        
+        }
     }
 
     private boolean isMainBranch() {
