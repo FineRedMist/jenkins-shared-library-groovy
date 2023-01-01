@@ -60,6 +60,7 @@ class CSharpBuilder {
                         }
                         notifyBuildStatus(BuildNotifyStatus.Failure)
                     } finally {
+                        script.echo('Archiving artifacts...')
                         script.archiveArtifacts('logs/**', allowEmptyArchive = true)
                         script.cleanWs()
                     }
@@ -259,6 +260,7 @@ class CSharpBuilder {
     }
 
     private void notifyBuildStatus(BuildNotifyStatus status) {
+        script.echo "Setting build status to: ${status.notifyText}"
         if(slack) {
             slack.send(status)
         }
