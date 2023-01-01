@@ -54,6 +54,8 @@ class CSharpBuilder {
                         notifyBuildStatus(BuildNotifyStatus.Unstable)
                     } else if (currentResult == 'SUCCESS') {
                         notifyBuildStatus(BuildNotifyStatus.Success)
+                    } else if (currentResult == 'FAILURE') {
+                        notifyBuildStatus(BuildNotifyStatus.Failure)
                     } else {
                         script.echo("Unexpected build status! ${currentResult}")
                     }
