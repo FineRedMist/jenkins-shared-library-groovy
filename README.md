@@ -4,6 +4,7 @@ This is a sample library that factors out common functionality for building C# p
 The script is driven by a Configuration.json that is in the root of the repository. The expected values are:
 * Version: Typically a x.y.z version (trailing zeroes optional).
 * ScmTrigger: [optional] The frequency to poll source control for changes.
+* RunTests: [optional, default true] Whether to build the TestBuildConfiguration and run tests & code coverage against it.
 * TestBuildConfiguration: [optional, default debug] The build configuration to use for building and running tests, code coverage, static analysis, etc.
 * Nuget Configuration Options
     * NugetSource: [optional] The nuget repository to push nuget packages to. If not set, it will not be queried or pushed to.

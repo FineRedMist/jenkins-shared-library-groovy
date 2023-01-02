@@ -135,22 +135,25 @@ class CSharpBuilder {
         addStage('Restore NuGet For Solution',
             { script.bat("dotnet restore --nologo --no-cache") })
 
-        addStage("Build Solution - ${config.getTestBuildConfiguration()}",
-            { script.bat("dotnet build --nologo -c ${config.getTestBuildConfiguration()} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })
+        addStageIfTrue("Build Solution - ${config.getTestBuildConfiguration()}",
+            { script.bat("dotnet build --nologo -c ${config.getTestBuildConfiguration()} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") },
+            { return config.getRunTests() })
             
         // MSTest projects automatically include coverlet that can generate cobertura formatted coverage information.
-        addStage('Run Tests', 
-            { script.bat("dotnet test --nologo -c ${config.getTestBuildConfiguration()} --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") })
+        addStageIfTrue('Run Tests', 
+            { script.bat("dotnet test --nologo -c ${config.getTestBuildConfiguration()} --results-directory TestResults --logger trx --collect:\"XPlat code coverage\" --no-restore --no-build") },
+            { return config.getRunTests() })
  
-        addStage('Publish Test Output', 
+        addStageIfTrue('Publish Test Output', 
             {
                 def tests = gatherTestResults('TestResults/**/*.trx')
                 def coverage = gatherCoverageResults('TestResults/**/In/**/*.cobertura.xml')
                 slack.addThreadedMessage("\n${tests}\n${coverage}")
                 script.mstest(testResultsFile:"TestResults/**/*.trx", failOnError: true, keepLongStdio: true)
-            })
+            },
+            { return config.getRunTests() })
 
-        addStage('Publish Code Coverage',
+        addStageIfTrue('Publish Code Coverage',
             {
                 script.publishCoverage(adapters: [
                     script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: config.getCoverageThresholds())
@@ -158,13 +161,15 @@ class CSharpBuilder {
                 if(script.currentBuild.result == 'FAILURE') {
                     throw new Exception('Code coverage results failed.')
                 }
-            })
+            },
+            { return config.getRunTests() })
 
-        addStage('Clean', 
+        addStageIfTrue('Clean', 
             {
                 script.bat("dotnet clean -c ${config.getTestBuildConfiguration()} --nologo")
                 script.bat(returnStatus: true, script: "del /s /q *.nupkg *.snupkg") // We don't care if this fails, that means it didn't find anything to delete.
-            })
+            },
+            { return config.getRunTests() })
 
         addStage("Build Solution - ${config.getNugetBuildConfiguration()}", 
             { script.bat("dotnet build --nologo -c ${config.getNugetBuildConfiguration()} -p:PackageVersion=${config.getNugetVersion()} -p:Version=${config.getVersion()} --no-restore") })

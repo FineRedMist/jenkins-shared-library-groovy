@@ -12,6 +12,7 @@ class Configuration {
     private String version = null
     private String nugetVersion = null
     private String scmTrigger = 'H * * * *'
+    private boolean runTests = true
     private String nugetSource = null
     private String slackChannel = null
     private boolean sendSlack = true
@@ -51,6 +52,7 @@ class Configuration {
         config.processVersion(script, data)
 
         config.scmTrigger = getValue(data, 'ScmTrigger', config.scmTrigger)
+        config.runTests = getValue(data, 'RunTests', config.runTests)
         config.nugetSource = getValue(data, 'NugetSource', config.nugetSource)
         config.sendSlack = getValue(data, 'SendSlack', config.sendSlack)
         config.sendSlackStartNotification = getValue(data, 'SendSlackStartNotification', config.sendSlackStartNotification)
@@ -100,6 +102,10 @@ class Configuration {
 
     String getScmTrigger() {
         return scmTrigger
+    }
+
+    String getRunTests() {
+        return runTests
     }
 
     String getNugetSource() {
