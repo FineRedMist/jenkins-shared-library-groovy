@@ -179,7 +179,10 @@ class CSharpBuilder {
                 script.bat("dotnet new tool-manifest")
                 script.bat("dotnet tool install --local security-scan --no-cache")
 
-                def slnFile = getSolutionFile()
+                String slnFile = getUniqueFileByExtension('.sln', true)
+                if(slnFile.length() == 0) {
+                    slnFile = getUniqueFileByExtension('.csproj')
+                }
 
                 script.bat("dotnet security-scan \"${slnFile}\" --excl-proj=**/*Test*/** -n --cwe --export=sast-report.sarif")
 
@@ -236,25 +239,25 @@ class CSharpBuilder {
             })
     }
 
-    private String getSolutionFile() {
-        def slnFile = ""
+    private String getUniqueFileByExtension(String extension, boolean allowNone = false) {
+        def foundFile = ""
         def count = 0
-        // Search the repository for a file ending in .sln.
+        // Search the repository for a file ending in extension.
         script.findFiles(glob: '**').each {
             def path = it.toString();
-            if(path.toLowerCase().endsWith('.sln')) {
-                slnFile = path;
+            if(path.toLowerCase().endsWith(extension)) {
+                foundFile = path;
                 count += 1
                 if(count > 1) {
-                    throw new Exception('Too many solution files were found in the repository.')
+                    throw new Exception("Too many files ending in ${extension} were found in the repository.")
                 }
             }
         }
-        if(slnFile.length() == 0) {
-            throw new Exception('No solution files were found in the repository.')
+        if(!allowNone && foundFile.length() == 0) {
+            throw new Exception("No files were found in the repository ending in ${extension}.")
         }
 
-        return slnFile
+        return foundFile
     }
 
     private List getPublishedNugetPackages(String nugetSource) {
