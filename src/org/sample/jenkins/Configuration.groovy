@@ -22,6 +22,7 @@ class Configuration {
     private String nugetKeyCredentialsId = null
     private String testBuildConfiguration = 'Debug'
     private String nugetBuildConfiguration = 'Release'
+    private String additionalBuildArtifacts = null
     private List coverageThresholds = [
                     [thresholdTarget: 'Group', unhealthyThreshold: 100.0],
                     [thresholdTarget: 'Package', unhealthyThreshold: 100.0],
@@ -63,6 +64,7 @@ class Configuration {
         config.coverageThresholds = getValue(data, 'CoverageThresholds', config.coverageThresholds)
         config.testBuildConfiguration = getValue(data, 'TestBuildConfiguration', config.testBuildConfiguration)
         config.nugetBuildConfiguration = getValue(data, 'NugetBuildConfiguration', config.nugetBuildConfiguration)
+        config.additionalBuildArtifacts = getValue(data, 'AdditionalBuildArtifacts', config.additionalBuildArtifacts)
 
         return config
     }
@@ -149,5 +151,9 @@ class Configuration {
     }
     String getNugetBuildConfiguration() {
         return nugetBuildConfiguration
+    }
+
+    String getAdditionalBuildArtifacts() {
+        return additionalBuildArtifacts
     }
 }
