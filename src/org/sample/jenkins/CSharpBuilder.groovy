@@ -160,7 +160,7 @@ class CSharpBuilder {
         addStageIfTrue('Publish Code Coverage',
             {
                 script.publishCoverage(adapters: [
-                    script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", thresholds: config.getCoverageThresholds())
+                    script.coberturaAdapter(path: "TestResults/**/In/**/*.cobertura.xml", mergeToOneReport: true, thresholds: config.getCoverageThresholds())
                 ], failNoReports: true, failUnhealthy: true, calculateDiffForChangeRequests: true)
                 if(script.currentBuild.result == 'FAILURE') {
                     throw new Exception('Code coverage results failed.')
