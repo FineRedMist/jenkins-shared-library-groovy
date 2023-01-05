@@ -69,7 +69,7 @@ class CSharpBuilder {
                     script.archiveArtifacts(artifacts: 'logs/**', allowEmptyArchive: true, onlyIfSuccessful: false)
                     String artifacts = config.getAdditionalBuildArtifacts()
                     if(artifacts != null) {
-                        script.archiveArtifacts(artifacts: artifacts, allowEmptyArchive, onlyIfSuccessful: false)
+                        script.archiveArtifacts(artifacts: artifacts, allowEmptyArchive: true, onlyIfSuccessful: false)
                     }
                     script.cleanWs()
                 }
