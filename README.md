@@ -6,7 +6,7 @@ The script is driven by a Configuration.json that is in the root of the reposito
 * ScmTrigger: [optional] The frequency to poll source control for changes.
 * RunTests: [optional, default true] Whether to build the TestBuildConfiguration and run tests & code coverage against it.
 * TestBuildConfiguration: [optional, default debug] The build configuration to use for building and running tests, code coverage, static analysis, etc.
-* AdditionalBuildArtifacts: [optional, default not set] Additional files to store as build artifacts for debugging.
+* AdditionalBuildArtifacts: [optional, default not set] Additional files to store as build [artifacts](https://www.jenkins.io/doc/pipeline/steps/core/#archiveartifacts-archive-the-artifacts) for debugging using ANT paths, comma separated.
 * Nuget Configuration Options
     * NugetSource: [optional] The nuget repository to push nuget packages to. If not set, it will not be queried or pushed to.
     * NugetKeyCredentialsId: [optional] The credentials for pushing to a nuget repository. If not set, nuget will not be queried or pushed to.

@@ -66,11 +66,9 @@ class CSharpBuilder {
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                 } finally {
                     script.echo('Archiving artifacts...')
-                    script.archiveArtifacts(artifacts: 'logs/**', allowEmptyArchive: true, onlyIfSuccessful: false)
-                    String artifacts = config.getAdditionalBuildArtifacts()
-                    if(artifacts != null) {
-                        script.archiveArtifacts(artifacts: artifacts, allowEmptyArchive: true, onlyIfSuccessful: false)
-                    }
+                    String additional = config.getAdditionalBuildArtifacts() 
+                    String artifacts = additional ? "logs/**,${additional}" : 'logs/**'
+                    script.archiveArtifacts(artifacts: artifacts, allowEmptyArchive: true, onlyIfSuccessful: false)
                     script.cleanWs()
                 }
             }
