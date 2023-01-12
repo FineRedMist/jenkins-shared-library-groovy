@@ -45,7 +45,7 @@ class CSharpBuilder {
             } catch (Exception e) {
                 if(slack) {
                     if(currentStage) {
-                        slack.addThreadedMessage("The build failed during ${scurrentStage}: ${e.getMessage()}")
+                        slack.addThreadedMessage("The build failed during ${currentStage}: ${e.getMessage()}")
                     } else {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
