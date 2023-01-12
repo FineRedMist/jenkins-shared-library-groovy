@@ -11,7 +11,10 @@ class CSharpBuilder {
     private def env = {}
     private Configuration config = null
     private SlackBuilder slack = null
+    // A bit of a limitation of the current implementation is it is linear. It makes it
+    // easy to track the current stage and when a failure occurs to report it, however.
     private List stages = []
+    private String currentStage = null
 
 
     CSharpBuilder(CpsScript script) {
@@ -41,8 +44,8 @@ class CSharpBuilder {
                 wrappedRun()
             } catch (Exception e) {
                 if(slack) {
-                    if(script.env.STAGE_NAME) {
-                        slack.addThreadedMessage("The build failed during ${script.env.STAGE_NAME}: ${e.getMessage()}")
+                    if(currentStage) {
+                        slack.addThreadedMessage("The build failed during ${scurrentStage}: ${e.getMessage()}")
                     } else {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
@@ -51,13 +54,12 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
+                    currentStage = null
                     scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
 
                     notifyBuildStatus(BuildNotifyStatus.fromText(script.currentBuild.result))
                 } catch (Exception e) {
-                    if(script.env.STAGE_NAME) {
-                        slack.addThreadedMessage("The build failed during ${script.env.STAGE_NAME}: ${e.getMessage()}")
-                    } else {
+                    if(slack) {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
                     notifyBuildStatus(BuildNotifyStatus.Failure)
@@ -109,6 +111,7 @@ class CSharpBuilder {
 
         script.withEnv(["MSBUILDDEBUGPATH=${script.env.WORKSPACE}/logs"]) {
             stages.each { stg ->
+                currentStage = stg.name
                 script.stage(stg.name) {
                     if(stg.runIfTrue && !stg.runIfTrue()) {
                         Utils.markStageSkippedForConditional(stg.name)
@@ -117,6 +120,7 @@ class CSharpBuilder {
                     }
                 }
             }
+            currentStage = null
         }
     }
 
