@@ -250,7 +250,7 @@ class CSharpBuilder {
 
     private String getUniqueFileByExtension(String extension, boolean allowNone = false) {
         String foundFile = ""
-        Int count = 0
+        int count = 0
         // Search the repository for a file ending in extension.
         script.findFiles(glob: '**').each {
             String path = it.toString();
@@ -315,9 +315,9 @@ class CSharpBuilder {
             return "No test results found."
         } 
         
-        Int total = results.total
-        Int passed = results.passed
-        Int failed = results.failed
+        int total = results.total
+        int passed = results.passed
+        int failed = results.failed
 
         if(failed == 0) {
             if(passed == 1) {
@@ -344,14 +344,14 @@ class CSharpBuilder {
             return "No code coverage results were found to report."
         } 
 
-        Int linesCovered = results.linesCovered
-        Int linesValid = results.linesValid
+        int linesCovered = results.linesCovered
+        int linesValid = results.linesValid
 
         if(linesCovered == 0) {
             return "No code lines were found to collect test coverage for."
         }
         
-        Double pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
+        double pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
         return "${linesCovered} of ${linesValid} lines were covered by testing (${pct.round(1)}%)."
     }
 
