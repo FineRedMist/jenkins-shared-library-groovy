@@ -43,27 +43,18 @@ class CSharpBuilder {
                 if(slack) {
                     slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                 }
-                notifyBuildStatus(BuildNotifyStatus.Failure)
+                script.currentBuild.result = 'FAILURE'
                 throw e
             } finally {
                 try {
-                    String currentResult = script.currentBuild.result ?: 'SUCCESS'
                     scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
 
-                    String updatedResult = script.currentBuild.result ?: 'SUCCESS'
-
-                    for(String status in ['FAILURE', 'UNSTABLE', 'SUCCESS']) {
-                        if(currentResult == status || updatedResult == status) {
-                            currentResult = status
-                            break
-                        }
-                    }
-
-                    notifyBuildStatus(BuildNotifyStatus.fromText(currentResult))
+                    notifyBuildStatus(BuildNotifyStatus.fromText(script.currentBuild.result))
                 } catch (e) {
                     if(slack) {
                         slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
                     }
+                    script.currentBuild.result = 'FAILURE'
                     notifyBuildStatus(BuildNotifyStatus.Failure)
                 } finally {
                     script.echo('Archiving artifacts...')
