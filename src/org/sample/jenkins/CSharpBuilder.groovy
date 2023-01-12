@@ -55,7 +55,7 @@ class CSharpBuilder {
             } finally {
                 try {
                     currentStage = null
-                    scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
+                    scanBuild("MSBuild warnings and errors", "No MSBuild warnings or errors", script.msBuild())
 
                     notifyBuildStatus(BuildNotifyStatus.fromText(script.currentBuild.result))
                 } catch (Exception e) {
