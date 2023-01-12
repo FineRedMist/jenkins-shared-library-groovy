@@ -39,9 +39,13 @@ class CSharpBuilder {
         script.node(label: nodeLabel) {
             try {
                 wrappedRun()
-            } catch (e) {
+            } catch (Exception e) {
                 if(slack) {
-                    slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                    if(script.env.STAGE_NAME) {
+                        slack.addThreadedMessage("The build failed during ${script.env.STAGE_NAME}: ${e.getMessage()}")
+                    } else {
+                        slack.addThreadedMessage("The build failed: ${e.getMessage()}")
+                    }
                 }
                 script.currentBuild.result = 'FAILURE'
                 throw e
@@ -50,12 +54,14 @@ class CSharpBuilder {
                     scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
 
                     notifyBuildStatus(BuildNotifyStatus.fromText(script.currentBuild.result))
-                } catch (e) {
-                    if(slack) {
-                        slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
+                } catch (Exception e) {
+                    if(script.env.STAGE_NAME) {
+                        slack.addThreadedMessage("The build failed during ${script.env.STAGE_NAME}: ${e.getMessage()}")
+                    } else {
+                        slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
-                    script.currentBuild.result = 'FAILURE'
                     notifyBuildStatus(BuildNotifyStatus.Failure)
+                    throw
                 } finally {
                     script.echo('Archiving artifacts...')
                     String additional = config.getAdditionalBuildArtifacts() 
