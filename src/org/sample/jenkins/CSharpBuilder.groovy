@@ -225,6 +225,7 @@ class CSharpBuilder {
         String nugetCredentialsId = config.getNugetKeyCredentialsId()
         addStageIfTrue('NuGet Publish',
             {
+                List published = []
                 // We are only going to publish to NuGet when the branch is main or master.
                 // This way other branches will test without interfering with releases.
                 script.withCredentials([script.string(credentialsId: nugetCredentialsId, variable: 'APIKey')]) { 
@@ -232,6 +233,13 @@ class CSharpBuilder {
                     def nupkgFiles = "**/*.nupkg"
                     script.findFiles(glob: nupkgFiles).each { nugetPkg ->
                         script.bat("dotnet nuget push \"${nugetPkg}\" --api-key \"%APIKey%\" --source \"${nugetSource}\"")
+                        published << nugetPkg.getName()
+                    }
+                }
+
+                if(published.size()) {
+                    if(slack) {
+                        slack.addInlineMessage("NuGet packages published:\n\t${published.join('\n\t')}")
                     }
                 }
             },
