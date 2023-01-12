@@ -43,6 +43,7 @@ class CSharpBuilder {
             try {
                 wrappedRun()
             } catch (Exception e) {
+                script.currentBuild.result = 'FAILURE'
                 if(slack) {
                     if(currentStage) {
                         slack.addThreadedMessage("The build failed during ${currentStage}: ${e.getMessage()}")
@@ -50,7 +51,6 @@ class CSharpBuilder {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
                 }
-                script.currentBuild.result = 'FAILURE'
                 throw e
             } finally {
                 try {
@@ -59,6 +59,7 @@ class CSharpBuilder {
 
                     notifyBuildStatus(BuildNotifyStatus.fromText(script.currentBuild.result))
                 } catch (Exception e) {
+                    script.currentBuild.result = 'FAILURE'
                     if(slack) {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
