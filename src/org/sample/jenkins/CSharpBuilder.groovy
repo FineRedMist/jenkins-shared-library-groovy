@@ -47,18 +47,19 @@ class CSharpBuilder {
                 throw e
             } finally {
                 try {
+                    String currentResult = script.currentBuild.result ?: 'SUCCESS'
                     scanBuild("Build warnings and errors", "No build warnings or errors", script.msBuild())
 
-                    def currentResult = script.currentBuild.result ?: 'SUCCESS'
-                    if (currentResult == 'UNSTABLE') {
-                        notifyBuildStatus(BuildNotifyStatus.Unstable)
-                    } else if (currentResult == 'SUCCESS') {
-                        notifyBuildStatus(BuildNotifyStatus.Success)
-                    } else if (currentResult == 'FAILURE') {
-                        notifyBuildStatus(BuildNotifyStatus.Failure)
-                    } else {
-                        script.echo("Unexpected build status! ${currentResult}")
+                    String updatedResult = script.currentBuild.result ?: 'SUCCESS'
+
+                    for(String status in ['FAILURE', 'UNSTABLE', 'SUCCESS']) {
+                        if(currentResult == status || updatedResult == status) {
+                            currentResult = status
+                            break
+                        }
                     }
+
+                    notifyBuildStatus(BuildNotifyStatus.fromText(currentResult))
                 } catch (e) {
                     if(slack) {
                         slack.addThreadedMessage("Script exception occurred: ${e.dump()}")
