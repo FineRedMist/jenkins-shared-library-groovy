@@ -198,17 +198,21 @@ class CSharpBuilder {
         addStageIfTrue('Preexisting NuGet Package Check', 
             {
                 def packages = getPublishedNugetPackages(nugetSource)
+                List duplicatePackages = []
 
                 // Find all the nuget packages to publish.
                 def nupkgFiles = "**/*.nupkg"
                 script.findFiles(glob: nupkgFiles).each { nugetPkg ->
-                    def pkgName = nugetPkg.getName()
+                    String pkgName = nugetPkg.getName()
                     pkgName = pkgName.substring(0, pkgName.length() - 6) // Remove extension
                     if(packages.contains(pkgName)) {
-                        script.error "The package ${pkgName} is already in the NuGet repository."
+                        duplicatePackages << pkgName
                     } else {
                         script.echo "The package ${nugetPkg} is not in the NuGet repository."
                     }
+                }
+                if(duplicatePackages.size()) {
+                    script.error "The following packages are already in the NuGet repository:\n\t${duplicatePackages.join('\t\n')}"
                 }
             },
             {
@@ -245,11 +249,11 @@ class CSharpBuilder {
     }
 
     private String getUniqueFileByExtension(String extension, boolean allowNone = false) {
-        def foundFile = ""
-        def count = 0
+        String foundFile = ""
+        Int count = 0
         // Search the repository for a file ending in extension.
         script.findFiles(glob: '**').each {
-            def path = it.toString();
+            String path = it.toString();
             if(path.toLowerCase().endsWith(extension)) {
                 foundFile = path;
                 count += 1
@@ -267,7 +271,7 @@ class CSharpBuilder {
 
     private List getPublishedNugetPackages(String nugetSource) {
         def tool = script.tool('NuGet-2022')
-        def packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source \"${nugetSource}\"")
+        String packageText = script.bat(returnStdout: true, script: "\"${tool}\" list -NonInteractive -Source \"${nugetSource}\"")
         packageText = packageText.replaceAll('\r', '')
         def packages = new ArrayList(packageText.split('\n').toList())
         packages.removeAll { line -> line.toLowerCase().startsWith('warning: ') }
@@ -311,9 +315,9 @@ class CSharpBuilder {
             return "No test results found."
         } 
         
-        def total = results.total
-        def passed = results.passed
-        def failed = results.failed
+        Int total = results.total
+        Int passed = results.passed
+        Int failed = results.failed
 
         if(failed == 0) {
             if(passed == 1) {
@@ -340,14 +344,14 @@ class CSharpBuilder {
             return "No code coverage results were found to report."
         } 
 
-        def linesCovered = results.linesCovered
-        def linesValid = results.linesValid
+        Int linesCovered = results.linesCovered
+        Int linesValid = results.linesValid
 
         if(linesCovered == 0) {
             return "No code lines were found to collect test coverage for."
         }
         
-        def pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
+        Double pct = linesCovered.toDouble() * 100 / linesValid.toDouble()
         return "${linesCovered} of ${linesValid} lines were covered by testing (${pct.round(1)}%)."
     }
 
