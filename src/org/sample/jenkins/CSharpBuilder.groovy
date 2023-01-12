@@ -61,7 +61,7 @@ class CSharpBuilder {
                         slack.addThreadedMessage("The build failed: ${e.getMessage()}")
                     }
                     notifyBuildStatus(BuildNotifyStatus.Failure)
-                    throw
+                    throw e
                 } finally {
                     script.echo('Archiving artifacts...')
                     String additional = config.getAdditionalBuildArtifacts() 
