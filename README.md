@@ -1,5 +1,12 @@
 # JenkinsLibrarySample
+
 This is a sample library that factors out common functionality for building C# projects for [jenkins-project-sample-dotnet](https://github.com/FineRedMist/jenkins-project-sample-dotnet)
+
+# Revisiting Objectives
+
+I have read [DRY Gone Bad--Bespoke Company Frameworks](https://aaronstannard.com/dry-gone-bad-bespoke-company-framework/), and I am rethinking my approach for this to decouple the project into smaller components. A couple of other factors are also motivating this thinking. Moving this functionality into a Jenkins plugin would facilitate a greater degree of functionality, and in particular, the opportunity to more easily build tests around this script (or eventually, script components). Though honestly, I'm not enthusiastic about Jenkins and some of the strange issues I've encountered.
+
+# Configuration
 
 The script is driven by a Configuration.json that is in the root of the repository. The expected values are:
 * Version: Typically a x.y.z version (trailing zeroes optional).
